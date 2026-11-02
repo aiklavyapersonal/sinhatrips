@@ -192,7 +192,7 @@ const CATS={Travel:['🚆','#ff6b4a'],Stay:['🏨','#7a5cff'],Food:['🍜','#f5a
 const PAL=['#ec4899','#8b5cf6','#06b6d4','#84cc16','#f97316','#64748b'];
 const catInfo=c=>CATS[c]||['📦',PAL[[...c].reduce((a,ch)=>a+ch.charCodeAt(0),0)%PAL.length]];
 const fmtD=d=>d?new Date(d+'T00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'';
-const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2800)};
+const toast=(m,ms=2800)=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),ms)};
 let D={trips:[],expenses:[],media:[]},SU={},UID=null,cur=null,tab='mem',coverBlob=null,rcpTarget=null,pend=null,people=[],lbList=[],lbI=0,editX=null,editFile=null,editRm=false,addIcon='',editIcon='';
 let SC={};try{SC=JSON.parse(localStorage.getItem('su2')||'{}');for(const k in SC)if(SC[k][1]<Date.now())delete SC[k]}catch(e){SC={}}
 const su=p=>{const e=p&&SC[p];return e&&e[1]>Date.now()?e[0]:''};
@@ -222,11 +222,12 @@ async function refresh(){
   saveSU();
   render();
 }
+let upErr='';
 async function up(file,folder,ext){
   const ex=ext||((file.name||'').match(/\.([a-z0-9]+)$/i)||[,'bin'])[1].toLowerCase();
   const path=`files/${folder}/${crypto.randomUUID()}.${ex}`;
   const {error}=await sb.storage.from(BUCKET).upload(path,file,{contentType:file.type||undefined,cacheControl:'31536000'});
-  if(error){toast('Upload failed: '+error.message);return null}
+  if(error){upErr=error.message;toast('Upload failed: '+error.message,6000);return null}
   return path;
 }
 async function shrink(f,max,q){
@@ -325,17 +326,17 @@ function lbFs(on){const l=$('#lb');l.classList.toggle('fs',on);const b=$('#lbf')
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&$('#lb').classList.contains('fs')){$('#lb').classList.remove('fs');const b=$('#lbf');if(b)b.textContent='⛶ Full screen'}});
 function lbShow(i){
   lbI=(i+lbList.length)%lbList.length;const m=lbList[lbI],many=lbList.length>1,isV=(m.type||'').startsWith('video'),n=m.name||('memory.'+(isV?'mp4':'jpg')),th=su(m.thumb_path)||su(m.path);
-  $('#lbin').innerHTML=(isV?`<video id="lbm" controls playsinline poster="${th}"></video>`:`<img id="lbm" src="${th}" alt="">`)+`<div style="color:#fff;font-size:13px;opacity:.8">${lbI+1} / ${lbList.length}</div><div class="acts"><button class="btn" id="lbd">⬇ Download</button><button class="btn g" id="lbf">⛶ Full screen</button><button class="btn g" data-close>Close</button><button class="btn d" id="lbx">🗑 Delete</button></div>`+(many?`<button class="nv p" data-nav="-1">‹</button><button class="nv n" data-nav="1">›</button>`:'');
+  $('#lbin').innerHTML=(isV?`<video id="lbm" controls playsinline poster="${th}"></video><span id="lbl" style="display:block;color:#fff;font-size:13px;opacity:.8">Loading video…</span>`:`<img id="lbm" src="${th}" alt="">`)+`<div style="color:#fff;font-size:13px;opacity:.8">${lbI+1} / ${lbList.length}</div><div class="acts"><button class="btn" id="lbd">⬇ Download</button><button class="btn g" id="lbf">⛶ Full screen</button><button class="btn g" data-close>Close</button><button class="btn d" id="lbx">🗑 Delete</button></div>`+(many?`<button class="nv p" data-nav="-1">‹</button><button class="nv n" data-nav="1">›</button>`:'');
   $('#lb').classList.add('open');
   $('#lbd').onclick=async()=>dl(await sign(m.path),n);
-  sign(m.path).then(u=>{const el=$('#lbm');if(!el||lbList[lbI]!==m||!u)return;if(isV){el.src=u;el.play().catch(()=>{})}else{const im=new Image();im.onload=()=>{if($('#lbm')===el)el.src=u};im.src=u}});
+  sign(m.path).then(u=>{const el=$('#lbm');if(!el||lbList[lbI]!==m||!u)return;if(isV){el.onerror=()=>{const l=$('#lbl');if(l)l.remove();if(!$('#lbe'))$('#lbin').insertAdjacentHTML('afterbegin','<span id="lbe" style="display:block;color:#fff;text-align:center;max-width:340px;font-size:14px;line-height:1.5">This video can’t play in this browser. iPhone (HEVC) videos often only play in Safari. You can still tap Download.</span>')};el.onloadeddata=()=>{const l=$('#lbl');if(l)l.remove()};el.src=u;el.play().catch(()=>{})}else{const im=new Image();im.onload=()=>{if($('#lbm')===el)el.src=u};im.src=u}});
   $('#lbf').onclick=()=>lbFs(!$('#lb').classList.contains('fs'));
   if($('#lb').classList.contains('fs'))$('#lbf').textContent='⤡ Exit full screen';
   $('#lbx').onclick=async()=>{lbFs(false);if(!await ask('Delete this '+(isV?'video':'photo')+'? This cannot be undone.'))return;await rmFiles([m.path,m.thumb_path]);await sb.from('media').delete().eq('id',m.id);D.media=D.media.filter(x=>x.id!==m.id);lbList.splice(lbI,1);render();if(lbList.length)lbShow(Math.min(lbI,lbList.length-1));else{$('#lb').classList.remove('open');$('#lbin').innerHTML=''}toast('Deleted')};
 }
 async function addFiles(files){
   const ok=[...files].filter(f=>/^(image|video)\//.test(f.type));if(!ok.length)return toast('Choose images or videos');
-  let n=0,d=0,miss=false;toast(`Uploading 0 of ${ok.length}…`);
+  let n=0,d=0,miss=false;const fails=[];toast(`Uploading 0 of ${ok.length}…`);
   await pool(ok,4,async f=>{
     let p=null,tp=null,name=f.name,type=f.type;
     if(f.type.startsWith('video/')){const r=await Promise.all([up(f,'media'),vthumb(f)]);p=r[0];if(p&&r[1])tp=await up(r[1],'thumbs','jpg')}
@@ -343,9 +344,9 @@ async function addFiles(files){
     if(p){const row={trip_id:cur,path:p,thumb_path:tp,type,name};
       let r=await sb.from('media').insert(row);
       if(r.error&&/thumb/i.test(r.error.message||'')){delete row.thumb_path;miss=true;r=await sb.from('media').insert(row)}
-      if(r.error)toast(r.error.message);else n++}
+      if(r.error){fails.push(f.name+': '+r.error.message)}else n++}else fails.push(f.name+': '+(upErr||'upload failed'))
     toast(`Uploading ${++d} of ${ok.length}…`)});
-  await refresh();toast(miss?'Added. Run add-features.sql in Supabase for faster loading':n+' added ✨');
+  await refresh();toast(fails.length?`${fails.length} of ${ok.length} failed. ${fails[0]}`+(/size|large|exceed/i.test(fails[0])?' (Supabase free plan limit is 50 MB per file)':''):miss?'Added. Run add-features.sql in Supabase for faster loading':n+' added ✨',fails.length?12000:2800);
 }
 function xrcp(){$('#xrn').textContent=editFile?'📎 '+editFile.name:(editX.receipt_path&&!editRm?'🧾 '+(editX.receipt_name||'receipt'):'No receipt');$('#xrr').classList.toggle('hide',!editFile&&(!editX.receipt_path||editRm))}
 const ICONS=['✈️','🚆','🚌','🚕','🚗','⛽','🚢','🏨','🏕️','🍜','🍕','☕','🍺','🎡','🎟️','🏖️','🛍️','🎁','💊','📶','🛂','🅿️','💡','📦'];
