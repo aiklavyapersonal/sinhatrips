@@ -154,6 +154,7 @@ body{background-image:radial-gradient(rgba(37,99,235,.10) 1.2px,transparent 1.2p
   <div class="acts"><button class="btn g" data-close>Cancel</button><button class="btn" id="tsave">Save trip</button></div>
 </div></div>
 
+<div class="modal" id="em"><div class="box"><h3>✏️ Edit expense</h3><div class="f"><label>What for</label><input id="xt"></div><div class="row f"><div><label>Amount</label><input id="xa" type="number" min="0" step="0.01" inputmode="decimal"></div><div><label>Date</label><input id="xd" type="date"></div></div><div class="f"><label>Category</label><select id="xc"></select><input id="xo" class="hide" placeholder="Type your category" maxlength="30" style="margin-top:6px"></div><div class="f"><label>Receipt</label><div class="acts" style="justify-content:flex-start;align-items:center"><small id="xrn" style="color:var(--mut)"></small><button class="btn g sm" id="xrb" type="button">📎 Attach / replace</button><button class="btn g sm" id="xrr" type="button">Remove</button></div></div><div class="acts"><button class="btn g" data-close>Cancel</button><button class="btn" id="xsave">Save changes</button></div></div></div>
 <div class="modal" id="cm" style="z-index:70"><div class="box" style="width:min(400px,100%);text-align:center"><div style="font-size:42px">🗑️</div><h3 id="cmt" style="margin:8px 0 18px;font-size:19px"></h3><div class="acts" style="justify-content:center"><button class="btn g" id="cmn">Cancel</button><button class="btn d" id="cmy">Yes, delete</button></div></div></div>
 <div class="modal lb" id="lb"><div class="in" id="lbin"></div></div>
 <div class="toast" id="toast"></div>
@@ -171,7 +172,7 @@ const PAL=['#ec4899','#8b5cf6','#06b6d4','#84cc16','#f97316','#64748b'];
 const catInfo=c=>CATS[c]||['📦',PAL[[...c].reduce((a,ch)=>a+ch.charCodeAt(0),0)%PAL.length]];
 const fmtD=d=>d?new Date(d+'T00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'';
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2800)};
-let D={trips:[],expenses:[],media:[]},SU={},UID=null,cur=null,tab='mem',coverBlob=null,rcpTarget=null,pend=null,people=[],lbList=[],lbI=0;
+let D={trips:[],expenses:[],media:[]},SU={},UID=null,cur=null,tab='mem',coverBlob=null,rcpTarget=null,pend=null,people=[],lbList=[],lbI=0,editX=null,editFile=null,editRm=false;
 const su=p=>p?SU[p]||'':'';
 
 /* ---------- Supabase data layer ---------- */
@@ -234,7 +235,7 @@ function expenses(t){
   <div><label>Category</label><select id="ec">${Object.keys(CATS).map(c=>`<option>${c}</option>`).join('')}</select><input id="eo" class="hide" placeholder="Type your category" maxlength="30" style="margin-top:6px"></div><div><label>Date</label><input id="ed" type="date" value="${new Date().toISOString().slice(0,10)}"></div></div>
   <div class="acts" style="justify-content:space-between;margin-top:12px;align-items:center"><span><button class="btn g sm" id="erb">📎 Attach receipt</button> <small id="ern" style="color:var(--mut)"></small></span><button class="btn sm" id="eadd">Add expense</button></div></div>
   <div class="panel">${L.map((e,i)=>`<div class="ex" style="animation-delay:${i*40}ms"><div class="ic">${catInfo(e.category)[0]}</div><div class="t"><b>${esc(e.title)}</b><small>${esc(e.category)} · ${fmtD(e.expense_date)}${e.receipt_path?' · 🧾 receipt':''}</small></div><div class="amt">${esc(t.currency)}${e.amount.toLocaleString()}</div>
-  <div class="acts">${e.receipt_path?`<button class="btn g sm" data-vr="${e.id}">View</button><button class="btn g sm" data-dr="${e.id}">⬇</button>`:`<button class="btn g sm" data-ar="${e.id}">＋🧾</button>`}<button class="btn g sm" data-de="${e.id}">✕</button></div></div>`).join('')||'<div class="empty">No expenses yet — add your first one above ✨</div>'}</div>`;
+  <div class="acts">${e.receipt_path?`<button class="btn g sm" data-vr="${e.id}">View</button><button class="btn g sm" data-dr="${e.id}">⬇</button>`:`<button class="btn g sm" data-ar="${e.id}">＋🧾</button>`}<button class="btn g sm" data-ee="${e.id}" title="Edit">✎</button><button class="btn g sm" data-de="${e.id}">✕</button></div></div>`).join('')||'<div class="empty">No expenses yet — add your first one above ✨</div>'}</div>`;
 }
 function memories(t){
   const L=D.media.filter(m=>m.trip_id===t.id);
@@ -265,6 +266,7 @@ async function addFiles(files){
     const {error}=await sb.from('media').insert({trip_id:cur,path:p,type:f.type,name:f.name});if(error)toast(error.message);else n++}
   await refresh();toast(n+' added ✨');
 }
+function xrcp(){$('#xrn').textContent=editFile?'📎 '+editFile.name:(editX.receipt_path&&!editRm?'🧾 '+(editX.receipt_name||'receipt'):'No receipt');$('#xrr').classList.toggle('hide',!editFile&&(!editX.receipt_path||editRm))}
 const rname=x=>x.receipt_name||'receipt';
 
 /* ---------- events ---------- */
@@ -291,6 +293,21 @@ document.addEventListener('click',async e=>{
     $('#lbin').innerHTML=(pdf?`<a class="btn" href="${u}" target="_blank" rel="noopener">📄 Open PDF receipt</a>`:`<img src="${u}" alt="">`)+`<div class="acts"><button class="btn" id="lbd">⬇ Download</button><button class="btn g" data-close>Close</button></div>`;
     $('#lb').classList.add('open');$('#lbd').onclick=()=>dl(u,rname(x));return}
   if(el=g('data-dr')){const x=D.expenses.find(v=>v.id===el.dataset.dr);return dl(su(x.receipt_path),rname(x))}
+  if(el=g('data-ee')){const x=D.expenses.find(v=>v.id===el.dataset.ee);editX=x;editFile=null;editRm=false;
+    $('#xt').value=x.title;$('#xa').value=x.amount;$('#xd').value=x.expense_date||'';
+    $('#xc').innerHTML=Object.keys(CATS).map(c=>`<option>${c}</option>`).join('');
+    const std=!!CATS[x.category];$('#xc').value=std?x.category:'Other';$('#xo').value=std?'':x.category;$('#xo').classList.toggle('hide',$('#xc').value!=='Other');
+    xrcp();$('#em').classList.add('open');return}
+  if(e.target.id==='xrb'){rcpTarget='edit';return $('#rf').click()}
+  if(e.target.id==='xrr'){editFile=null;editRm=true;return xrcp()}
+  if(e.target.id==='xsave'){
+    const title=$('#xt').value.trim(),amount=parseFloat($('#xa').value);if(!title||!(amount>=0))return toast('Add a name and amount');
+    let cat=$('#xc').value;if(cat==='Other'){const o=$('#xo').value.trim();if(o)cat=o}
+    const x=editX,patch={title,amount,category:cat,expense_date:$('#xd').value||null};
+    if(editFile){toast('Uploading receipt…');const p=await up(editFile,'receipts');if(!p)return;patch.receipt_path=p;patch.receipt_name=editFile.name;patch.receipt_type=editFile.type;await rmFiles([x.receipt_path])}
+    else if(editRm&&x.receipt_path){await rmFiles([x.receipt_path]);patch.receipt_path=null;patch.receipt_name=null;patch.receipt_type=null}
+    const {error}=await sb.from('expenses').update(patch).eq('id',x.id);if(error)return toast(error.message);
+    $('#em').classList.remove('open');await refresh();return toast('Expense updated ✏️')}
   if(el=g('data-de')){const x=D.expenses.find(v=>v.id===el.dataset.de);if(await ask('Delete this expense?')){await rmFiles([x.receipt_path]);await sb.from('expenses').delete().eq('id',x.id);await refresh()}return}
   if(e.target.id==='eadd'){
     const title=$('#et').value.trim(),amount=parseFloat($('#ea').value);if(!title||!(amount>=0))return toast('Add a name and amount');
@@ -305,11 +322,12 @@ document.addEventListener('click',async e=>{
     const {error}=await sb.from('trips').insert({name,dest:$('#td').value.trim(),currency:$('#tc').value,start_date:$('#ts').value||null,end_date:$('#te').value||null,notes:$('#tt').value.trim(),people:[...people],cover_path:cp});
     if(error)return toast(error.message);$('#tm').classList.remove('open');await refresh();toast('Trip created 🎉')}
 });
-document.addEventListener('change',e=>{if(e.target.id==='ec')$('#eo').classList.toggle('hide',e.target.value!=='Other')});
+document.addEventListener('change',e=>{if(e.target.id==='ec')$('#eo').classList.toggle('hide',e.target.value!=='Other');if(e.target.id==='xc')$('#xo').classList.toggle('hide',e.target.value!=='Other')});
 $('#cf').onchange=e=>{const f=e.target.files[0];if(!f)return;coverBlob=f;$('#cv').textContent='';$('#cv').style.backgroundImage=`url('${URL.createObjectURL(f)}')`;e.target.value=''};
 $('#mf').onchange=e=>{addFiles(e.target.files);e.target.value=''};
 $('#rf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
-  if(rcpTarget==='new'){pend=f;const n=$('#ern');if(n)n.textContent='📎 '+f.name}
+  if(rcpTarget==='edit'){editFile=f;editRm=false;xrcp()}
+  else if(rcpTarget==='new'){pend=f;const n=$('#ern');if(n)n.textContent='📎 '+f.name}
   else{toast('Uploading receipt…');const p=await up(f,'receipts');if(!p)return;const {error}=await sb.from('expenses').update({receipt_path:p,receipt_name:f.name,receipt_type:f.type}).eq('id',rcpTarget);if(error)return toast(error.message);await refresh();toast('Receipt attached 🧾')}};
 document.addEventListener('dragover',e=>{const z=e.target.closest('#dz');if(z){e.preventDefault();z.classList.add('ov')}});
 document.addEventListener('dragleave',e=>{const z=e.target.closest('#dz');if(z)z.classList.remove('ov')});
