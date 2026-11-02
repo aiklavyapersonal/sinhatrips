@@ -132,6 +132,11 @@ body{background-image:radial-gradient(rgba(37,99,235,.10) 1.2px,transparent 1.2p
 .lb.fs .acts{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:61;opacity:.4;transition:.3s}
 .lb.fs .acts:hover{opacity:1}
 @media(hover:none){.lb.fs .acts{opacity:.85}}
+.tb{position:absolute;top:14px;right:14px;z-index:3;display:flex;gap:8px;opacity:0;transform:translateY(-6px);transition:.3s}
+.card:hover .tb{opacity:1;transform:none}
+.tb button{width:38px;height:38px;border:0;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:16px;cursor:pointer;backdrop-filter:blur(6px);transition:.2s}
+.tb button:hover{background:var(--acc2);transform:scale(1.1)}
+@media(hover:none){.tb{opacity:1;transform:none}}
 .ig{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .ib{border:1px solid var(--line);background:var(--bg);border-radius:12px;min-width:40px;height:40px;font-size:20px;cursor:pointer;padding:0 8px;transition:.2s;color:var(--text)}
 .ib:hover{transform:scale(1.12)}
@@ -149,7 +154,7 @@ body{background-image:radial-gradient(rgba(37,99,235,.10) 1.2px,transparent 1.2p
 <div class="wrap" id="app"></div>
 
 <div class="modal" id="tm"><div class="box">
-  <h3>✈️ New trip</h3>
+  <h3 id="tmt">✈️ New trip</h3>
   <div class="f"><label>Cover image</label><div class="cover" id="cv">🖼️ Tap to choose a cover photo</div><input type="file" id="cf" accept="image/*" class="hide"></div>
   <div class="f"><label>Trip name</label><input id="tn" placeholder="e.g. Trip A – Goa getaway"></div>
   <div class="row f"><div><label>Destination</label><input id="td" placeholder="Where to?"></div><div><label>Currency</label><select id="tc"><option>₹</option><option>$</option><option>€</option><option>£</option><option>¥</option></select></div></div>
@@ -214,14 +219,14 @@ function home(){
   <div class="stats"><div class="chip">🌍 ${D.trips.length} trip${D.trips.length==1?'':'s'}</div><div class="chip">📸 ${D.media.length} memories</div><div class="chip">🧾 ${D.expenses.length} expenses</div></div></div>
   <div class="grid">${D.trips.map((t,i)=>{const n=D.media.filter(m=>m.trip_id===t.id).length,tot=D.expenses.filter(e=>e.trip_id===t.id).reduce((a,e)=>a+e.amount,0),pc=(t.people||[]).length;
   return `<div class="card" data-open="${t.id}" style="animation-delay:${i*70}ms">${t.cover_path?`<div class="img" style="background-image:url('${su(t.cover_path)}')"></div>`:'<div class="ph">🏝️</div>'}
-  <div class="ov"><h3>${esc(t.name)}</h3><div style="opacity:.85;font-size:13px">📍 ${esc(t.dest||'—')}${t.start_date?' · '+fmtD(t.start_date):''}</div>
+  <div class="tb"><button data-et="${t.id}" title="Edit trip">✎</button><button data-dt="${t.id}" title="Delete trip">🗑</button></div><div class="ov"><h3>${esc(t.name)}</h3><div style="opacity:.85;font-size:13px">📍 ${esc(t.dest||'—')}${t.start_date?' · '+fmtD(t.start_date):''}</div>
   <div class="meta"><b>💸 ${esc(t.currency)}${tot.toLocaleString()}</b><b>📸 ${n}</b>${pc?`<b>👥 ${pc}</b>`:''}</div></div></div>`}).join('')}
   <div class="card add" data-new style="animation-delay:${D.trips.length*70}ms"><div><div class="plus">＋</div><b>Add a new trip</b></div></div></div>`;
 }
 function trip(){
   const t=D.trips.find(x=>x.id===cur);if(!t){cur=null;return home()}
   const pp=(t.people||[]);
-  $('#app').innerHTML=`<div class="top"><button class="btn g sm" data-back>← All trips</button><button class="btn d sm" data-deltrip>Delete trip</button></div>
+  $('#app').innerHTML=`<div class="top"><button class="btn g sm" data-back>← All trips</button><div class="acts"><button class="btn g sm" data-edittrip>✎ Edit trip</button><button class="btn d sm" data-deltrip>Delete trip</button></div></div>
   <div class="detail"><div class="dh">${t.cover_path?`<div class="img" style="background-image:url('${su(t.cover_path)}')"></div>`:'<div class="img" style="background:linear-gradient(135deg,var(--acc),var(--acc2))"></div>'}
   <div class="ov"><h2>${esc(t.name)}</h2><div>📍 ${esc(t.dest||'—')} ${t.start_date?' · '+fmtD(t.start_date):''}${t.end_date?' → '+fmtD(t.end_date):''}</div>
   ${pp.length?`<div class="chips" style="margin:10px 0 0">${pp.map(p=>`<span class="pp" style="padding:4px 12px">👤 ${esc(p)}</span>`).join('')}</div>`:''}
@@ -253,7 +258,15 @@ function memories(t){
 /* ---------- helpers: modal, people, lightbox ---------- */
 function chips(){$('#pc').innerHTML=people.map((p,i)=>`<span class="pp">${esc(p)}<button data-rp="${i}" type="button">×</button></span>`).join('')}
 function addPerson(){const v=$('#pi').value.trim();if(v&&!people.includes(v)){people.push(v);chips()}$('#pi').value='';$('#pi').focus()}
-function openTripModal(){coverBlob=null;people=[];chips();['tn','td','tt','ts','te','pi'].forEach(i=>$('#'+i).value='');$('#cv').style.backgroundImage='';$('#cv').textContent='🖼️ Tap to choose a cover photo';$('#tm').classList.add('open')}
+let editTripId=null;
+function openTripModal(t){editTripId=t?t.id:null;coverBlob=null;people=t?[...(t.people||[])]:[];chips();
+  const v=(i,x)=>$('#'+i).value=x||'';v('tn',t&&t.name);v('td',t&&t.dest);v('tt',t&&t.notes);v('ts',t&&t.start_date);v('te',t&&t.end_date);v('pi','');
+  $('#tc').value=t?t.currency:'₹';const cv=$('#cv');
+  if(t&&t.cover_path){cv.textContent='';cv.style.backgroundImage=`url('${su(t.cover_path)}')`}else{cv.style.backgroundImage='';cv.textContent='🖼️ Tap to choose a cover photo'}
+  $('#tmt').textContent=t?'✏️ Edit trip':'✈️ New trip';$('#tsave').textContent=t?'Save changes':'Save trip';$('#tm').classList.add('open')}
+async function delTrip(id){if(!await ask('Delete this trip with all its expenses and memories? This cannot be undone.'))return;
+  const ps=[D.trips.find(t=>t.id===id)?.cover_path,...D.expenses.filter(x=>x.trip_id===id).map(x=>x.receipt_path),...D.media.filter(x=>x.trip_id===id).map(x=>x.path)];
+  await rmFiles(ps);const {error}=await sb.from('trips').delete().eq('id',id);if(error)return toast(error.message);if(cur===id)cur=null;await refresh();toast('Trip deleted')}
 function ask(msg){return new Promise(r=>{const c=$('#cm');$('#cmt').textContent=msg;c.classList.add('open');const done=v=>{c.classList.remove('open');c.onclick=null;r(v)};$('#cmy').onclick=()=>done(true);$('#cmn').onclick=()=>done(false);c.onclick=e=>{e.stopPropagation();if(e.target===c)done(false)}})}
 function lbFs(on){const l=$('#lb');l.classList.toggle('fs',on);const b=$('#lbf');if(b)b.textContent=on?'⤡ Exit full screen':'⛶ Full screen';try{if(on&&l.requestFullscreen)l.requestFullscreen().catch(()=>{});else if(!on&&document.fullscreenElement)document.exitFullscreen()}catch(e){}}
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&$('#lb').classList.contains('fs')){$('#lb').classList.remove('fs');const b=$('#lbf');if(b)b.textContent='⛶ Full screen'}});
@@ -291,11 +304,12 @@ document.addEventListener('click',async e=>{
   if(g('data-new'))return openTripModal();
   if(el=g('data-rp')){people.splice(+el.dataset.rp,1);return chips()}
   if(e.target.id==='pa')return addPerson();
+  if(el=g('data-dt'))return delTrip(el.dataset.dt);
+  if(el=g('data-et'))return openTripModal(D.trips.find(t=>t.id===el.dataset.et));
   if(el=g('data-open')){cur=el.dataset.open;tab='mem';scrollTo(0,0);return render()}
   if(g('data-back')){cur=null;return render()}
-  if(g('data-deltrip')){if(!await ask('Delete this trip with all its expenses and memories? This cannot be undone.'))return;
-    const ps=[D.trips.find(t=>t.id===cur)?.cover_path,...D.expenses.filter(x=>x.trip_id===cur).map(x=>x.receipt_path),...D.media.filter(x=>x.trip_id===cur).map(x=>x.path)];
-    await rmFiles(ps);const {error}=await sb.from('trips').delete().eq('id',cur);if(error)return toast(error.message);cur=null;await refresh();return toast('Trip deleted')}
+  if(g('data-deltrip'))return delTrip(cur);
+  if(g('data-edittrip'))return openTripModal(D.trips.find(t=>t.id===cur));
   if(el=g('data-tab')){tab=el.dataset.tab;return render()}
   if(e.target.id==='cv')return $('#cf').click();
   if(e.target.id==='dz'||e.target.closest('#dz'))return $('#mf').click();
@@ -333,9 +347,11 @@ document.addEventListener('click',async e=>{
   if(e.target.id==='tsave'){
     const name=$('#tn').value.trim();if(!name)return toast('Give your trip a name');
     if($('#pi').value.trim())addPerson();
-    let cp=null;if(coverBlob){toast('Uploading cover…');cp=await up(coverBlob,'covers')}
-    const {error}=await sb.from('trips').insert({name,dest:$('#td').value.trim(),currency:$('#tc').value,start_date:$('#ts').value||null,end_date:$('#te').value||null,notes:$('#tt').value.trim(),people:[...people],cover_path:cp});
-    if(error)return toast(error.message);$('#tm').classList.remove('open');await refresh();toast('Trip created 🎉')}
+    const old=editTripId?D.trips.find(t=>t.id===editTripId):null;
+    let cp=old?old.cover_path:null;if(coverBlob){toast('Uploading cover…');const np=await up(coverBlob,'covers');if(np){if(old&&old.cover_path)await rmFiles([old.cover_path]);cp=np}}
+    const row={name,dest:$('#td').value.trim(),currency:$('#tc').value,start_date:$('#ts').value||null,end_date:$('#te').value||null,notes:$('#tt').value.trim(),people:[...people],cover_path:cp};
+    const {error}=editTripId?await sb.from('trips').update(row).eq('id',editTripId):await sb.from('trips').insert(row);
+    if(error)return toast(error.message);const was=editTripId;editTripId=null;$('#tm').classList.remove('open');await refresh();toast(was?'Trip updated ✏️':'Trip created 🎉')}
 });
 document.addEventListener('change',e=>{if(e.target.id==='ec')$('#eo').classList.toggle('hide',e.target.value!=='Other');if(e.target.id==='xc')$('#xo').classList.toggle('hide',e.target.value!=='Other')});
 $('#cf').onchange=e=>{const f=e.target.files[0];if(!f)return;coverBlob=f;$('#cv').textContent='';$('#cv').style.backgroundImage=`url('${URL.createObjectURL(f)}')`;e.target.value=''};
