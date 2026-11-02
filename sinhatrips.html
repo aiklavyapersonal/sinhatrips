@@ -132,6 +132,13 @@ body{background-image:radial-gradient(rgba(37,99,235,.10) 1.2px,transparent 1.2p
 .lb.fs .acts{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:61;opacity:.4;transition:.3s}
 .lb.fs .acts:hover{opacity:1}
 @media(hover:none){.lb.fs .acts{opacity:.85}}
+.filt{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.fb{border:1px solid var(--line);background:var(--surf);color:var(--mut);border-radius:99px;padding:9px 16px;min-height:42px;font:600 14px Inter,sans-serif;cursor:pointer;transition:.2s}
+.fb span{opacity:.7;margin-left:4px;font-weight:500}
+.fb:hover{color:var(--text)}
+.fb.on{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border-color:transparent;box-shadow:0 6px 16px rgba(37,99,235,.3)}
+.m{content-visibility:auto;contain-intrinsic-size:180px}
+@media(max-width:640px){.mgrid .m:first-child{grid-column:auto;grid-row:auto}.mgrid{grid-template-columns:repeat(2,1fr);gap:8px}.m{border-radius:14px}.wrap{padding:16px 14px 70px}.dh{height:230px;border-radius:22px}.dh .ov{padding:18px}.card{border-radius:24px}.box{padding:20px}.nv{width:46px;height:46px}.nv.p{left:8px}.nv.n{right:8px}.lb .acts{justify-content:center}.top{padding:8px 10px}.btn{min-height:40px}.drop{padding:20px}}
 input,select,textarea{font-size:16px!important}
 .ex{flex-wrap:wrap}
 .ex .acts{margin-left:auto}
@@ -167,6 +174,7 @@ input,select,textarea{font-size:16px!important}
   <div class="acts"><button class="btn g" data-close>Cancel</button><button class="btn" id="tsave">Save trip</button></div>
 </div></div>
 
+<div class="modal" id="pm"><div class="box" style="width:min(420px,100%)"><h3 id="pmt">🔒 Password protect expenses</h3><p id="pmd" style="color:var(--mut);margin:0 0 12px;font-size:13px"></p><div class="f" id="pcw"><label>Current password</label><input id="pcu" type="password" autocomplete="off"></div><div class="f"><label>New password</label><input id="pn1" type="password" autocomplete="new-password"></div><div class="f"><label>Confirm new password</label><input id="pn2" type="password" autocomplete="new-password"></div><p id="pme" style="color:#e5484d;min-height:18px;font-size:13px;margin:0 0 8px"></p><div class="acts"><button class="btn g" data-close>Cancel</button><button class="btn d hide" id="prm">Remove password</button><button class="btn" id="psv">Save password</button></div></div></div>
 <div class="modal" id="em"><div class="box"><h3>✏️ Edit expense</h3><div class="f"><label>What for</label><input id="xt"></div><div class="row f"><div><label>Amount</label><input id="xa" type="number" min="0" step="0.01" inputmode="decimal"></div><div><label>Date</label><input id="xd" type="date"></div></div><div class="f"><label>Category</label><select id="xc"></select><input id="xo" class="hide" placeholder="Type your category" maxlength="30" style="margin-top:6px"></div><div class="f"><label>Icon</label><div class="ig" data-ig="edit" id="xig"></div></div><div class="f"><label>Receipt</label><div class="acts" style="justify-content:flex-start;align-items:center"><small id="xrn" style="color:var(--mut)"></small><button class="btn g sm" id="xrb" type="button">📎 Attach / replace</button><button class="btn g sm" id="xrr" type="button">Remove</button></div></div><div class="acts"><button class="btn g" data-close>Cancel</button><button class="btn" id="xsave">Save changes</button></div></div></div>
 <div class="modal" id="cm" style="z-index:70"><div class="box" style="width:min(400px,100%);text-align:center"><div style="font-size:42px">🗑️</div><h3 id="cmt" style="margin:8px 0 18px;font-size:19px"></h3><div class="acts" style="justify-content:center"><button class="btn g" id="cmn">Cancel</button><button class="btn d" id="cmy">Yes, delete</button></div></div></div>
 <div class="modal lb" id="lb"><div class="in" id="lbin"></div></div>
@@ -186,7 +194,16 @@ const catInfo=c=>CATS[c]||['📦',PAL[[...c].reduce((a,ch)=>a+ch.charCodeAt(0),0
 const fmtD=d=>d?new Date(d+'T00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'';
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2800)};
 let D={trips:[],expenses:[],media:[]},SU={},UID=null,cur=null,tab='mem',coverBlob=null,rcpTarget=null,pend=null,people=[],lbList=[],lbI=0,editX=null,editFile=null,editRm=false,addIcon='',editIcon='';
-const su=p=>p?SU[p]||'':'';
+let SC={};try{SC=JSON.parse(localStorage.getItem('su2')||'{}');for(const k in SC)if(SC[k][1]<Date.now())delete SC[k]}catch(e){SC={}}
+const su=p=>{const e=p&&SC[p];return e&&e[1]>Date.now()?e[0]:''};
+const fresh=p=>{const e=SC[p];return !!e&&e[1]>Date.now()+864e5};
+const putSU=(p,u)=>{SC[p]=[u,Date.now()+6.5*864e5]};
+const saveSU=()=>{try{localStorage.setItem('su2',JSON.stringify(SC))}catch(e){}};
+async function sign(p){if(!p)return '';if(fresh(p))return su(p);const {data}=await sb.storage.from(BUCKET).createSignedUrl(p,604800);if(data&&data.signedUrl){putSU(p,data.signedUrl);saveSU();return data.signedUrl}return su(p)}
+const UL=new Set();
+let memFilter='all',memLimit=60;
+const isVid=m=>(m.type||'').startsWith('video');
+const memList=()=>D.media.filter(m=>m.trip_id===cur&&(memFilter==='all'||(isVid(m)?'video':'photo')===memFilter));
 
 /* ---------- Supabase data layer ---------- */
 async function refresh(){
@@ -197,20 +214,45 @@ async function refresh(){
   const err=t.error||e.error||m.error;
   if(err){console.error(err);toast('Could not load data: '+err.message)}
   D.trips=t.data||[];D.expenses=(e.data||[]).map(x=>({...x,amount:Number(x.amount)}));D.media=m.data||[];
-  const need=[...D.trips.map(x=>x.cover_path),...D.expenses.map(x=>x.receipt_path),...D.media.map(x=>x.path)].filter(p=>p&&!SU[p]);
+  const need=[...D.trips.map(x=>x.cover_path),...D.media.map(x=>x.thumb_path||x.path)].filter(p=>p&&!fresh(p));
   for(let i=0;i<need.length;i+=100){
-    const {data}=await sb.storage.from(BUCKET).createSignedUrls(need.slice(i,i+100),21600);
-    (data||[]).forEach(r=>{if(r.signedUrl)SU[r.path]=r.signedUrl});
+    const {data}=await sb.storage.from(BUCKET).createSignedUrls(need.slice(i,i+100),604800);
+    (data||[]).forEach(r=>{if(r.signedUrl)putSU(r.path,r.signedUrl)});
   }
+  saveSU();
   render();
 }
-async function up(file,folder){
-  const ext=((file.name||'').match(/\.([a-z0-9]+)$/i)||[,'bin'])[1].toLowerCase();
-  const path=`files/${folder}/${crypto.randomUUID()}.${ext}`;
-  const {error}=await sb.storage.from(BUCKET).upload(path,file,{contentType:file.type||undefined});
+async function up(file,folder,ext){
+  const ex=ext||((file.name||'').match(/\.([a-z0-9]+)$/i)||[,'bin'])[1].toLowerCase();
+  const path=`files/${folder}/${crypto.randomUUID()}.${ex}`;
+  const {error}=await sb.storage.from(BUCKET).upload(path,file,{contentType:file.type||undefined,cacheControl:'31536000'});
   if(error){toast('Upload failed: '+error.message);return null}
   return path;
 }
+async function shrink(f,max,q){
+  if(!/^image\/(jpeg|png|webp|heic|heif)$/i.test(f.type)&&!/\.(heic|heif)$/i.test(f.name||''))return null;
+  try{const bm=await createImageBitmap(f,{imageOrientation:'from-image'});const sc=Math.min(1,max/Math.max(bm.width,bm.height));
+    const c=document.createElement('canvas');c.width=Math.round(bm.width*sc);c.height=Math.round(bm.height*sc);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(bm,0,0,c.width,c.height);if(bm.close)bm.close();
+    return await new Promise(r=>c.toBlob(r,'image/jpeg',q))}catch(e){return null}}
+async function upImg(f,folder,max){const s=await shrink(f,max,.85),use=s&&s.size<f.size;return up(use?s:f,folder,use?'jpg':null)}
+function vthumb(f){return new Promise(res=>{const v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='metadata';const u=URL.createObjectURL(f);v.src=u;
+  const done=b=>{URL.revokeObjectURL(u);res(b)};v.onerror=()=>done(null);v.onloadeddata=()=>{v.currentTime=Math.min(1,(v.duration||1)/2)};
+  v.onseeked=()=>{try{const c=document.createElement('canvas'),sc=Math.min(1,480/v.videoWidth);c.width=v.videoWidth*sc;c.height=v.videoHeight*sc;c.getContext('2d').drawImage(v,0,0,c.width,c.height);c.toBlob(done,'image/jpeg',.72)}catch(e){done(null)}};setTimeout(()=>done(null),8000)})}
+async function pool(items,n,fn){let i=0;await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{while(i<items.length){const k=i++;await fn(items[k],k)}}))}
+async function prepImg(f){
+  try{
+    const bm=await createImageBitmap(f,{imageOrientation:'from-image'}),W=bm.width,H=bm.height;
+    const draw=(src,w,h,max)=>{const sc=Math.min(1,max/Math.max(w,h)),c=document.createElement('canvas');c.width=Math.round(w*sc);c.height=Math.round(h*sc);const x=c.getContext('2d');x.imageSmoothingQuality='high';x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(src,0,0,c.width,c.height);return c};
+    const blob=(c,q)=>new Promise(r=>c.toBlob(r,'image/jpeg',q));
+    const big=Math.max(W,H)>2200||f.size>1500000,mc=draw(bm,W,H,2200),tc=draw(mc,mc.width,mc.height,420);
+    const [m,t]=await Promise.all([big?blob(mc,.82):null,blob(tc,.7)]);if(bm.close)bm.close();
+    const use=m&&m.size<f.size;
+    return {main:use?m:f,ext:use?'jpg':null,name:use?f.name.replace(/\.[^.]+$/,'')+'.jpg':f.name,type:use?'image/jpeg':f.type,thumb:t}
+  }catch(e){return {main:f,ext:null,name:f.name,type:f.type,thumb:null}}}
+async function hashPw(pw,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+  const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:Uint8Array.from(atob(salt),c=>c.charCodeAt(0)),iterations:150000,hash:'SHA-256'},k,256);return btoa(String.fromCharCode(...new Uint8Array(b)))}
+const newSalt=()=>btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
+const pwOk=async(t,pw)=>(await hashPw(pw,t.exp_salt))===t.exp_hash;
 const rmFiles=async ps=>{ps=ps.filter(Boolean);if(ps.length)await sb.storage.from(BUCKET).remove(ps)};
 async function dl(u,name){try{const b=await (await fetch(u)).blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Saved ✓')}catch(e){toast('Download failed')}}
 
@@ -219,11 +261,11 @@ function render(){cur?trip():home()}
 function home(){
   $('#app').innerHTML=`<div class="top"><div class="logo"><span>🧭</span>SinhaTrips</div><div class="acts"><button class="btn" data-new>＋ New trip</button></div></div>
   <div class="hero"><div class="fl"><i>✈️</i><i>🏔️</i><i>🌴</i><i>📸</i></div><h1>Every journey,<br>beautifully kept.</h1><p>Your trips, expenses, receipts and memories — synced on every device.</p>
-  <div class="stats"><div class="chip">🌍 ${D.trips.length} trip${D.trips.length==1?'':'s'}</div><div class="chip">📸 ${D.media.length} memories</div><div class="chip">🧾 ${D.expenses.length} expenses</div></div></div>
-  <div class="grid">${D.trips.map((t,i)=>{const n=D.media.filter(m=>m.trip_id===t.id).length,tot=D.expenses.filter(e=>e.trip_id===t.id).reduce((a,e)=>a+e.amount,0),pc=(t.people||[]).length;
+  <div class="stats"><div class="chip">🌍 ${D.trips.length} trip${D.trips.length==1?'':'s'}</div><div class="chip">📸 ${D.media.length} memories</div></div></div>
+  <div class="grid">${D.trips.map((t,i)=>{const n=D.media.filter(m=>m.trip_id===t.id).length,pc=(t.people||[]).length;
   return `<div class="card" data-open="${t.id}" style="animation-delay:${i*70}ms">${t.cover_path?`<div class="img" style="background-image:url('${su(t.cover_path)}')"></div>`:'<div class="ph">🏝️</div>'}
   <div class="tb"><button data-et="${t.id}" title="Edit trip">✎</button><button data-dt="${t.id}" title="Delete trip">🗑</button></div><div class="ov"><h3>${esc(t.name)}</h3><div style="opacity:.85;font-size:13px">📍 ${esc(t.dest||'—')}${t.start_date?' · '+fmtD(t.start_date):''}</div>
-  <div class="meta"><b>💸 ${esc(t.currency)}${tot.toLocaleString()}</b><b>📸 ${n}</b>${pc?`<b>👥 ${pc}</b>`:''}</div></div></div>`}).join('')}
+  <div class="meta"><b>📸 ${n}</b>${pc?`<b>👥 ${pc}</b>`:''}</div></div></div>`}).join('')}
   <div class="card add" data-new style="animation-delay:${D.trips.length*70}ms"><div><div class="plus">＋</div><b>Add a new trip</b></div></div></div>`;
 }
 function trip(){
@@ -238,10 +280,13 @@ function trip(){
   <div id="pn"></div></div>`;
   tab=='exp'?expenses(t):memories(t);
 }
+function lockView(t){
+  $('#pn').innerHTML=`<div class="panel" style="text-align:center;padding:42px 20px"><div style="font-size:54px">🔒</div><h3 style="margin:8px 0">Expenses are locked</h3><p style="color:var(--mut);margin:0 0 14px">Enter the password to view expenses for this trip.</p><div style="max-width:300px;margin:0 auto 14px"><input id="lp" type="password" placeholder="Password" autocomplete="off"></div><button class="btn" id="lu">Unlock</button><p id="lm" style="color:#e5484d;min-height:20px;margin:10px 0 0;font-size:13px"></p></div>`;setTimeout(()=>{const p=$('#lp');if(p)p.focus()},50)}
 function expenses(t){
+  if(t.exp_hash&&!UL.has(t.id))return lockView(t);
   const L=D.expenses.filter(e=>e.trip_id===t.id).sort((a,b)=>(b.expense_date||'').localeCompare(a.expense_date||'')||b.created_at.localeCompare(a.created_at)),tot=L.reduce((a,e)=>a+e.amount,0);
   const by={};L.forEach(e=>by[e.category]=(by[e.category]||0)+e.amount);
-  $('#pn').innerHTML=`<div class="panel"><label>Total spent</label><div class="total">${esc(t.currency)}${tot.toLocaleString(undefined,{maximumFractionDigits:2})}</div>
+  $('#pn').innerHTML=`<div class="acts" style="justify-content:flex-end;margin-bottom:12px">${t.exp_hash?'<button class="btn g sm" data-lock>🔒 Lock now</button>':''}<button class="btn g sm" data-pw>${t.exp_hash?'🔑 Change / remove password':'🔒 Set password'}</button></div><div class="panel"><label>Total spent</label><div class="total">${esc(t.currency)}${tot.toLocaleString(undefined,{maximumFractionDigits:2})}</div>
   <div class="bars">${Object.keys(by).map(c=>`<i style="width:${by[c]/tot*100}%;background:${catInfo(c)[1]}"></i>`).join('')}</div>
   <div class="leg">${Object.keys(by).map(c=>`<span><s style="background:${catInfo(c)[1]}"></s>${esc(c)} ${esc(t.currency)}${by[c].toLocaleString()}</span>`).join('')||'No expenses yet'}</div></div>
   <div class="panel"><div class="row"><div><label>What for</label><input id="et" placeholder="Dinner, taxi…"></div><div><label>Amount (${esc(t.currency)})</label><input id="ea" type="number" min="0" step="0.01" inputmode="decimal"></div>
@@ -251,11 +296,16 @@ function expenses(t){
   <div class="panel">${L.map((e,i)=>`<div class="ex" style="animation-delay:${i*40}ms"><div class="ic">${e.icon||catInfo(e.category)[0]}</div><div class="t"><b>${esc(e.title)}</b><small>${esc(e.category)} · ${fmtD(e.expense_date)}${e.receipt_path?' · 🧾 receipt':''}</small></div><div class="amt">${esc(t.currency)}${e.amount.toLocaleString()}</div>
   <div class="acts">${e.receipt_path?`<button class="btn g sm" data-vr="${e.id}">View</button><button class="btn g sm" data-dr="${e.id}">⬇</button>`:`<button class="btn g sm" data-ar="${e.id}">＋🧾</button>`}<button class="btn g sm" data-ee="${e.id}" title="Edit">✎</button><button class="btn g sm" data-de="${e.id}">✕</button></div></div>`).join('')||'<div class="empty">No expenses yet — add your first one above ✨</div>'}</div>`;
 }
+function mthumb(m){const v=(m.type||'').startsWith('video'),th=m.thumb_path?su(m.thumb_path):'';
+  if(th)return `<img src="${th}" alt="" loading="lazy" decoding="async">${v?'<div class="pl">▶</div>':''}`;
+  return v?`<video src="${su(m.path)}#t=0.1" preload="metadata" muted playsinline></video><div class="pl">▶</div>`:`<img src="${su(m.path)}" alt="" loading="lazy" decoding="async">`}
 function memories(t){
-  const L=D.media.filter(m=>m.trip_id===t.id);
+  const all=D.media.filter(m=>m.trip_id===t.id),np=all.filter(m=>!isVid(m)).length,nv=all.length-np,L=memList(),shown=L.slice(0,memLimit);
   $('#pn').innerHTML=`<div class="drop" id="dz">📤 <b>Drop photos &amp; videos here</b> or tap to upload</div>
-  <div class="mgrid">${L.map((m,i)=>`<div class="m" data-view="${m.id}" style="animation-delay:${Math.min(i,20)*40}ms"><button class="xb" data-dm="${m.id}" title="Delete">🗑</button>${(m.type||'').startsWith('video')?`<video src="${su(m.path)}#t=0.1" preload="metadata" muted></video><div class="pl">▶</div>`:`<img src="${su(m.path)}" alt="" loading="lazy">`}</div>`).join('')}</div>
-  ${L.length?'':'<div class="empty">No memories yet — add the moments worth keeping 📸</div>'}`;
+  <div class="filt"><button class="fb ${memFilter=='all'?'on':''}" data-mf="all">All <span>${all.length}</span></button><button class="fb ${memFilter=='photo'?'on':''}" data-mf="photo">📷 Photos <span>${np}</span></button><button class="fb ${memFilter=='video'?'on':''}" data-mf="video">🎬 Videos <span>${nv}</span></button></div>
+  <div class="mgrid">${shown.map((m,i)=>`<div class="m" data-view="${m.id}" style="animation-delay:${Math.min(i,12)*30}ms"><button class="xb" data-dm="${m.id}" title="Delete">🗑</button>${mthumb(m)}</div>`).join('')}</div>
+  ${L.length>shown.length?`<div style="text-align:center;margin:18px 0"><button class="btn g" data-more>Show more (${L.length-shown.length} left)</button></div>`:''}
+  ${L.length?'':`<div class="empty">${all.length?'Nothing here for this filter':'No memories yet — add the moments worth keeping 📸'}</div>`}`;
 }
 
 /* ---------- helpers: modal, people, lightbox ---------- */
@@ -268,25 +318,34 @@ function openTripModal(t){editTripId=t?t.id:null;coverBlob=null;people=t?[...(t.
   if(t&&t.cover_path){cv.textContent='';cv.style.backgroundImage=`url('${su(t.cover_path)}')`}else{cv.style.backgroundImage='';cv.textContent='🖼️ Tap to choose a cover photo'}
   $('#tmt').textContent=t?'✏️ Edit trip':'✈️ New trip';$('#tsave').textContent=t?'Save changes':'Save trip';$('#tm').classList.add('open')}
 async function delTrip(id){if(!await ask('Delete this trip with all its expenses and memories? This cannot be undone.'))return;
-  const ps=[D.trips.find(t=>t.id===id)?.cover_path,...D.expenses.filter(x=>x.trip_id===id).map(x=>x.receipt_path),...D.media.filter(x=>x.trip_id===id).map(x=>x.path)];
+  const ps=[D.trips.find(t=>t.id===id)?.cover_path,...D.expenses.filter(x=>x.trip_id===id).map(x=>x.receipt_path),...D.media.filter(x=>x.trip_id===id).flatMap(x=>[x.path,x.thumb_path])];
   await rmFiles(ps);const {error}=await sb.from('trips').delete().eq('id',id);if(error)return toast(error.message);if(cur===id)cur=null;await refresh();toast('Trip deleted')}
 function ask(msg){return new Promise(r=>{const c=$('#cm');$('#cmt').textContent=msg;c.classList.add('open');const done=v=>{c.classList.remove('open');c.onclick=null;r(v)};$('#cmy').onclick=()=>done(true);$('#cmn').onclick=()=>done(false);c.onclick=e=>{e.stopPropagation();if(e.target===c)done(false)}})}
 function lbFs(on){const l=$('#lb');l.classList.toggle('fs',on);const b=$('#lbf');if(b)b.textContent=on?'⤡ Exit full screen':'⛶ Full screen';try{if(on&&l.requestFullscreen)l.requestFullscreen().catch(()=>{});else if(!on&&document.fullscreenElement)document.exitFullscreen()}catch(e){}}
 document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&$('#lb').classList.contains('fs')){$('#lb').classList.remove('fs');const b=$('#lbf');if(b)b.textContent='⛶ Full screen'}});
 function lbShow(i){
-  lbI=(i+lbList.length)%lbList.length;const m=lbList[lbI],many=lbList.length>1,isV=(m.type||'').startsWith('video'),n=m.name||('memory.'+(isV?'mp4':'jpg')),u=su(m.path);
-  $('#lbin').innerHTML=(isV?`<video src="${u}" controls autoplay></video>`:`<img src="${u}" alt="">`)+`<div style="color:#fff;font-size:13px;opacity:.8">${lbI+1} / ${lbList.length}</div><div class="acts"><button class="btn" id="lbd">⬇ Download</button><button class="btn g" id="lbf">⛶ Full screen</button><button class="btn g" data-close>Close</button><button class="btn d" id="lbx">🗑 Delete</button></div>`+(many?`<button class="nv p" data-nav="-1">‹</button><button class="nv n" data-nav="1">›</button>`:'');
+  lbI=(i+lbList.length)%lbList.length;const m=lbList[lbI],many=lbList.length>1,isV=(m.type||'').startsWith('video'),n=m.name||('memory.'+(isV?'mp4':'jpg')),th=su(m.thumb_path)||su(m.path);
+  $('#lbin').innerHTML=(isV?`<video id="lbm" controls playsinline poster="${th}"></video>`:`<img id="lbm" src="${th}" alt="">`)+`<div style="color:#fff;font-size:13px;opacity:.8">${lbI+1} / ${lbList.length}</div><div class="acts"><button class="btn" id="lbd">⬇ Download</button><button class="btn g" id="lbf">⛶ Full screen</button><button class="btn g" data-close>Close</button><button class="btn d" id="lbx">🗑 Delete</button></div>`+(many?`<button class="nv p" data-nav="-1">‹</button><button class="nv n" data-nav="1">›</button>`:'');
   $('#lb').classList.add('open');
-  $('#lbd').onclick=()=>dl(u,n);
+  $('#lbd').onclick=async()=>dl(await sign(m.path),n);
+  sign(m.path).then(u=>{const el=$('#lbm');if(!el||lbList[lbI]!==m||!u)return;if(isV){el.src=u;el.play().catch(()=>{})}else{const im=new Image();im.onload=()=>{if($('#lbm')===el)el.src=u};im.src=u}});
   $('#lbf').onclick=()=>lbFs(!$('#lb').classList.contains('fs'));
   if($('#lb').classList.contains('fs'))$('#lbf').textContent='⤡ Exit full screen';
-  $('#lbx').onclick=async()=>{lbFs(false);if(!await ask('Delete this '+(isV?'video':'photo')+'? This cannot be undone.'))return;await rmFiles([m.path]);await sb.from('media').delete().eq('id',m.id);D.media=D.media.filter(x=>x.id!==m.id);lbList.splice(lbI,1);render();if(lbList.length)lbShow(Math.min(lbI,lbList.length-1));else{$('#lb').classList.remove('open');$('#lbin').innerHTML=''}toast('Deleted')};
+  $('#lbx').onclick=async()=>{lbFs(false);if(!await ask('Delete this '+(isV?'video':'photo')+'? This cannot be undone.'))return;await rmFiles([m.path,m.thumb_path]);await sb.from('media').delete().eq('id',m.id);D.media=D.media.filter(x=>x.id!==m.id);lbList.splice(lbI,1);render();if(lbList.length)lbShow(Math.min(lbI,lbList.length-1));else{$('#lb').classList.remove('open');$('#lbin').innerHTML=''}toast('Deleted')};
 }
 async function addFiles(files){
   const ok=[...files].filter(f=>/^(image|video)\//.test(f.type));if(!ok.length)return toast('Choose images or videos');
-  let n=0;for(const f of ok){toast(`Uploading ${n+1} of ${ok.length}…`);const p=await up(f,'media');if(!p)continue;
-    const {error}=await sb.from('media').insert({trip_id:cur,path:p,type:f.type,name:f.name});if(error)toast(error.message);else n++}
-  await refresh();toast(n+' added ✨');
+  let n=0,d=0,miss=false;toast(`Uploading 0 of ${ok.length}…`);
+  await pool(ok,4,async f=>{
+    let p=null,tp=null,name=f.name,type=f.type;
+    if(f.type.startsWith('video/')){const r=await Promise.all([up(f,'media'),vthumb(f)]);p=r[0];if(p&&r[1])tp=await up(r[1],'thumbs','jpg')}
+    else{const x=await prepImg(f);name=x.name;type=x.type;const r=await Promise.all([up(x.main,'media',x.ext),x.thumb?up(x.thumb,'thumbs','jpg'):null]);p=r[0];tp=r[1]}
+    if(p){const row={trip_id:cur,path:p,thumb_path:tp,type,name};
+      let r=await sb.from('media').insert(row);
+      if(r.error&&/thumb/i.test(r.error.message||'')){delete row.thumb_path;miss=true;r=await sb.from('media').insert(row)}
+      if(r.error)toast(r.error.message);else n++}
+    toast(`Uploading ${++d} of ${ok.length}…`)});
+  await refresh();toast(miss?'Added. Run add-features.sql in Supabase for faster loading':n+' added ✨');
 }
 function xrcp(){$('#xrn').textContent=editFile?'📎 '+editFile.name:(editX.receipt_path&&!editRm?'🧾 '+(editX.receipt_name||'receipt'):'No receipt');$('#xrr').classList.toggle('hide',!editFile&&(!editX.receipt_path||editRm))}
 const ICONS=['✈️','🚆','🚌','🚕','🚗','⛽','🚢','🏨','🏕️','🍜','🍕','☕','🍺','🎡','🎟️','🏖️','🛍️','🎁','💊','📶','🛂','🅿️','💡','📦'];
@@ -309,8 +368,8 @@ document.addEventListener('click',async e=>{
   if(e.target.id==='pa')return addPerson();
   if(el=g('data-dt'))return delTrip(el.dataset.dt);
   if(el=g('data-et'))return openTripModal(D.trips.find(t=>t.id===el.dataset.et));
-  if(el=g('data-open')){cur=el.dataset.open;tab='mem';scrollTo(0,0);return render()}
-  if(g('data-back')){cur=null;return render()}
+  if(el=g('data-open')){cur=el.dataset.open;tab='mem';UL.clear();memFilter='all';memLimit=60;scrollTo(0,0);return render()}
+  if(g('data-back')){cur=null;UL.clear();return render()}
   if(g('data-deltrip'))return delTrip(cur);
   if(g('data-edittrip'))return openTripModal(D.trips.find(t=>t.id===cur));
   if(el=g('data-tab')){tab=el.dataset.tab;return render()}
@@ -318,12 +377,28 @@ document.addEventListener('click',async e=>{
   if(e.target.id==='dz'||e.target.closest('#dz'))return $('#mf').click();
   if(e.target.id==='erb'){rcpTarget='new';return $('#rf').click()}
   if(el=g('data-ar')){rcpTarget=el.dataset.ar;return $('#rf').click()}
-  if(el=g('data-dm')){const id=el.dataset.dm,m=D.media.find(x=>x.id===id);if(await ask('Delete this memory? This cannot be undone.')){await rmFiles([m.path]);await sb.from('media').delete().eq('id',id);await refresh();toast('Deleted')}return}
-  if(el=g('data-view')){lbList=D.media.filter(m=>m.trip_id===cur);return lbShow(lbList.findIndex(m=>m.id===el.dataset.view))}
-  if(el=g('data-vr')){const x=D.expenses.find(v=>v.id===el.dataset.vr),u=su(x.receipt_path),pdf=x.receipt_type==='application/pdf';
+  if(el=g('data-dm')){const id=el.dataset.dm,m=D.media.find(x=>x.id===id);if(await ask('Delete this memory? This cannot be undone.')){await rmFiles([m.path,m.thumb_path]);await sb.from('media').delete().eq('id',id);await refresh();toast('Deleted')}return}
+  if(el=g('data-view')){lbList=memList();return lbShow(lbList.findIndex(m=>m.id===el.dataset.view))}
+  if(el=g('data-vr')){const x=D.expenses.find(v=>v.id===el.dataset.vr),u=await sign(x.receipt_path),pdf=x.receipt_type==='application/pdf';
     $('#lbin').innerHTML=(pdf?`<a class="btn" href="${u}" target="_blank" rel="noopener">📄 Open PDF receipt</a>`:`<img src="${u}" alt="">`)+`<div class="acts"><button class="btn" id="lbd">⬇ Download</button><button class="btn g" data-close>Close</button></div>`;
     $('#lb').classList.add('open');$('#lbd').onclick=()=>dl(u,rname(x));return}
-  if(el=g('data-dr')){const x=D.expenses.find(v=>v.id===el.dataset.dr);return dl(su(x.receipt_path),rname(x))}
+  if(el=g('data-dr')){const x=D.expenses.find(v=>v.id===el.dataset.dr);return dl(await sign(x.receipt_path),rname(x))}
+  if(e.target.id==='lu'){const t=D.trips.find(x=>x.id===cur),pw=$('#lp').value;if(!pw)return;$('#lm').textContent='Checking…';
+    if(await pwOk(t,pw)){UL.add(t.id);return render()}$('#lm').textContent='Wrong password, try again';$('#lp').select();return}
+  if(g('data-lock')){UL.delete(cur);return render()}
+  if(g('data-pw')){const t=D.trips.find(x=>x.id===cur),has=!!t.exp_hash;
+    $('#pmt').textContent=has?'🔑 Change or remove password':'🔒 Password protect expenses';$('#pmd').textContent=has?'Enter your current password, then set a new one, or remove the protection.':'Choose a password. This trip’s expenses will ask for it every time you open them.';
+    $('#pcw').classList.toggle('hide',!has);$('#prm').classList.toggle('hide',!has);$('#psv').textContent=has?'Save new password':'Save password';['pcu','pn1','pn2'].forEach(i=>$('#'+i).value='');$('#pme').textContent='';$('#pm').classList.add('open');return}
+  if(e.target.id==='psv'||e.target.id==='prm'){
+    const t=D.trips.find(x=>x.id===cur),rm=e.target.id==='prm',err=m=>$('#pme').textContent=m;
+    if(t.exp_hash&&!(await pwOk(t,$('#pcu').value)))return err('Current password is wrong');
+    let patch={exp_salt:null,exp_hash:null};
+    if(!rm){const a=$('#pn1').value;if(a.length<4)return err('Use at least 4 characters');if(a!==$('#pn2').value)return err('Passwords do not match');const salt=newSalt();patch={exp_salt:salt,exp_hash:await hashPw(a,salt)}}
+    const {error}=await sb.from('trips').update(patch).eq('id',t.id);
+    if(error)return err(/exp_/.test(error.message)?'Run add-features.sql in Supabase first':error.message);
+    if(rm)UL.delete(t.id);else UL.add(t.id);$('#pm').classList.remove('open');await refresh();return toast(rm?'Password removed':'Expenses are now protected 🔒')}
+  if(el=g('data-mf')){memFilter=el.dataset.mf;memLimit=60;return memories(D.trips.find(t=>t.id===cur))}
+  if(g('data-more')){memLimit+=60;return memories(D.trips.find(t=>t.id===cur))}
   if(el=g('data-ic')){const w=el.closest('[data-ig]');if(w.dataset.ig==='add')addIcon=el.dataset.ic;else editIcon=el.dataset.ic;w.innerHTML=iconBtns(el.dataset.ic);return}
   if(el=g('data-ee')){const x=D.expenses.find(v=>v.id===el.dataset.ee);editX=x;editFile=null;editRm=false;editIcon=x.icon||'';$('#xig').innerHTML=iconBtns(editIcon);
     $('#xt').value=x.title;$('#xa').value=x.amount;$('#xd').value=x.expense_date||'';
@@ -336,7 +411,7 @@ document.addEventListener('click',async e=>{
     const title=$('#xt').value.trim(),amount=parseFloat($('#xa').value);if(!title||!(amount>=0))return toast('Add a name and amount');
     let cat=$('#xc').value;if(cat==='Other'){const o=$('#xo').value.trim();if(o)cat=o}
     const x=editX,patch={title,amount,category:cat,expense_date:$('#xd').value||null,icon:editIcon||null};
-    if(editFile){toast('Uploading receipt…');const p=await up(editFile,'receipts');if(!p)return;patch.receipt_path=p;patch.receipt_name=editFile.name;patch.receipt_type=editFile.type;await rmFiles([x.receipt_path])}
+    if(editFile){toast('Uploading receipt…');const p=await upImg(editFile,'receipts',2000);if(!p)return;patch.receipt_path=p;patch.receipt_name=editFile.name;patch.receipt_type=editFile.type;await rmFiles([x.receipt_path])}
     else if(editRm&&x.receipt_path){await rmFiles([x.receipt_path]);patch.receipt_path=null;patch.receipt_name=null;patch.receipt_type=null}
     const {error}=await saveExp(patch,x.id);if(error)return toast(error.message);
     $('#em').classList.remove('open');await refresh();return toast(iconMiss?'Saved, but icons need the SQL step (add-icon-column.sql)':'Expense updated ✏️')}
@@ -344,14 +419,14 @@ document.addEventListener('click',async e=>{
   if(e.target.id==='eadd'){
     const title=$('#et').value.trim(),amount=parseFloat($('#ea').value);if(!title||!(amount>=0))return toast('Add a name and amount');
     let cat=$('#ec').value;if(cat==='Other'){const o=$('#eo').value.trim();if(o)cat=o}
-    let rp=null;if(pend){toast('Uploading receipt…');rp=await up(pend,'receipts');if(!rp)return}
+    let rp=null;if(pend){toast('Uploading receipt…');rp=await upImg(pend,'receipts',2000);if(!rp)return}
     const {error}=await saveExp({trip_id:cur,title,amount,category:cat,icon:addIcon||null,expense_date:$('#ed').value||null,receipt_path:rp,receipt_name:pend?pend.name:null,receipt_type:pend?pend.type:null});
     if(error)return toast(error.message);pend=null;addIcon='';await refresh();return toast(iconMiss?'Saved, but icons need the SQL step (add-icon-column.sql)':'Expense added 💸')}
   if(e.target.id==='tsave'){
     const name=$('#tn').value.trim();if(!name)return toast('Give your trip a name');
     if($('#pi').value.trim())addPerson();
     const old=editTripId?D.trips.find(t=>t.id===editTripId):null;
-    let cp=old?old.cover_path:null;if(coverBlob){toast('Uploading cover…');const np=await up(coverBlob,'covers');if(np){if(old&&old.cover_path)await rmFiles([old.cover_path]);cp=np}}
+    let cp=old?old.cover_path:null;if(coverBlob){toast('Uploading cover…');const np=await upImg(coverBlob,'covers',1600);if(np){if(old&&old.cover_path)await rmFiles([old.cover_path]);cp=np}}
     const row={name,dest:$('#td').value.trim(),currency:$('#tc').value,start_date:$('#ts').value||null,end_date:$('#te').value||null,notes:$('#tt').value.trim(),people:[...people],cover_path:cp};
     const {error}=editTripId?await sb.from('trips').update(row).eq('id',editTripId):await sb.from('trips').insert(row);
     if(error)return toast(error.message);const was=editTripId;editTripId=null;$('#tm').classList.remove('open');await refresh();toast(was?'Trip updated ✏️':'Trip created 🎉')}
@@ -362,12 +437,13 @@ $('#mf').onchange=e=>{addFiles(e.target.files);e.target.value=''};
 $('#rf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
   if(rcpTarget==='edit'){editFile=f;editRm=false;xrcp()}
   else if(rcpTarget==='new'){pend=f;const n=$('#ern');if(n)n.textContent='📎 '+f.name}
-  else{toast('Uploading receipt…');const p=await up(f,'receipts');if(!p)return;const {error}=await sb.from('expenses').update({receipt_path:p,receipt_name:f.name,receipt_type:f.type}).eq('id',rcpTarget);if(error)return toast(error.message);await refresh();toast('Receipt attached 🧾')}};
+  else{toast('Uploading receipt…');const p=await upImg(f,'receipts',2000);if(!p)return;const {error}=await sb.from('expenses').update({receipt_path:p,receipt_name:f.name,receipt_type:f.type}).eq('id',rcpTarget);if(error)return toast(error.message);await refresh();toast('Receipt attached 🧾')}};
 document.addEventListener('dragover',e=>{const z=e.target.closest('#dz');if(z){e.preventDefault();z.classList.add('ov')}});
 document.addEventListener('dragleave',e=>{const z=e.target.closest('#dz');if(z)z.classList.remove('ov')});
 document.addEventListener('drop',e=>{const z=e.target.closest('#dz');if(z){e.preventDefault();z.classList.remove('ov');addFiles(e.dataTransfer.files)}});
 document.addEventListener('keydown',e=>{
   if(e.target.id==='pi'&&e.key==='Enter'){e.preventDefault();return addPerson()}
+  if(e.target.id==='lp'&&e.key==='Enter'){e.preventDefault();return $('#lu').click()}
   if(e.key==='Escape'){if($('#cm').classList.contains('open')){$('#cmn').click();return}if($('#lb').classList.contains('fs')){lbFs(false);return}document.querySelectorAll('.modal:not(#am)').forEach(m=>m.classList.remove('open'))}
   if($('#lb').classList.contains('open')&&lbList.length>1&&$('#lbin .nv')){if(e.key==='ArrowRight')lbShow(lbI+1);if(e.key==='ArrowLeft')lbShow(lbI-1)}});
 let tx=null;$('#lb').addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
