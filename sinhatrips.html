@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SinhaTrips</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f8fb;--surf:#ffffff;--text:#13213a;--mut:#5f6c82;--acc:#14b8a6;--acc2:#2563eb;--line:#e1e8f0;--sh:0 10px 30px rgba(30,60,110,.12);color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 Inter,system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+.blob{position:fixed;border-radius:50%;filter:blur(90px);opacity:.28;z-index:0;animation:float 18s ease-in-out infinite;pointer-events:none}
+.b1{width:420px;height:420px;background:var(--acc);top:-120px;left:-100px}
+.b2{width:480px;height:480px;background:var(--acc2);bottom:-160px;right:-120px;animation-delay:-8s}
+@keyframes float{50%{transform:translate(60px,40px) scale(1.15)}}
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:28px 20px 80px}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;margin:0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:28px}
+.logo{font:800 26px Fraunces,Georgia,serif;display:flex;gap:10px;align-items:center}
+.logo span{display:inline-block;animation:wob 3s ease-in-out infinite}
+@keyframes wob{50%{transform:rotate(14deg) translateY(-3px)}}
+.btn{border:0;border-radius:999px;padding:11px 20px;font:600 14px Inter,sans-serif;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 8px 22px rgba(37,99,235,.3);transition:transform .2s,box-shadow .2s}
+.btn:hover{transform:translateY(-2px) scale(1.03)}
+.btn.g{background:var(--surf);color:var(--text);box-shadow:none;border:1px solid var(--line)}
+.btn.sm{padding:7px 13px;font-size:12.5px}
+.btn.d{background:#e5484d;color:#fff;box-shadow:none}
+.hero{text-align:center;padding:28px 0 36px;animation:rise .8s both}
+.hero h1{font-size:clamp(34px,6vw,56px);line-height:1.1;background:linear-gradient(120deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--mut);max-width:520px;margin:12px auto 0}
+.stats{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+.chip{background:var(--surf);border:1px solid var(--line);padding:8px 16px;border-radius:999px;box-shadow:var(--sh);font-weight:600;font-size:13px}
+@keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.grid{display:grid;gap:26px}
+.card{position:relative;height:clamp(320px,64vh,560px);border-radius:30px;overflow:hidden;cursor:pointer;box-shadow:var(--sh);background:var(--surf);animation:rise .7s both;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+.card:hover{transform:translateY(-6px);box-shadow:0 26px 60px rgba(37,99,235,.28)}
+.card .img{position:absolute;inset:0;background-size:cover;background-position:center;transition:transform .8s}
+.card:hover .img{transform:scale(1.1)}
+.card .ph{position:absolute;inset:0;display:grid;place-items:center;font-size:64px;background:linear-gradient(135deg,var(--acc),var(--acc2))}
+.card .ov{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.88),rgba(0,0,0,.05) 70%);color:#fff;padding:clamp(22px,4vw,44px);display:flex;flex-direction:column;justify-content:flex-end}
+.card h3{font-size:clamp(32px,6vw,60px);line-height:1.05}
+.card .ov>div:nth-child(2){font-size:16px!important}
+.card .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:12.5px}
+.card .meta b{background:rgba(255,255,255,.2);backdrop-filter:blur(6px);padding:4px 10px;border-radius:999px;font-weight:600}
+.add{height:170px;display:grid;place-items:center;text-align:center;border:2px dashed var(--line);background:transparent;color:var(--mut);box-shadow:none}
+.add:hover{border-color:var(--acc);color:var(--acc)}
+.add .plus{font-size:52px;line-height:1;transition:transform .4s}
+.add:hover .plus{transform:rotate(90deg) scale(1.2)}
+.empty{text-align:center;color:var(--mut);padding:30px}
+.detail{animation:rise .5s both}
+.dh{position:relative;height:300px;border-radius:28px;overflow:hidden;box-shadow:var(--sh);margin:14px 0 22px;color:#fff}
+.dh .img{position:absolute;inset:0;background-size:cover;background-position:center;animation:zoom 14s ease-out both}
+@keyframes zoom{from{transform:scale(1.15)}to{transform:scale(1)}}
+.dh .ov{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,10,25,.85),rgba(10,10,25,.15));padding:26px;display:flex;flex-direction:column;justify-content:flex-end}
+.dh h2{font-size:clamp(28px,5vw,42px)}
+.tabs{display:inline-flex;background:var(--surf);border:1px solid var(--line);border-radius:999px;padding:5px;margin-bottom:20px;position:relative}
+.tab{border:0;background:none;color:var(--mut);padding:9px 22px;border-radius:999px;font:600 14px Inter,sans-serif;cursor:pointer;transition:.25s}
+.tab.on{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff}
+.panel{background:var(--surf);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:var(--sh);margin-bottom:20px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+label{font-size:12px;color:var(--mut);font-weight:600;display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;transition:border .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--acc2);box-shadow:0 0 0 3px rgba(37,99,235,.18)}
+.total{font:800 34px Fraunces,Georgia,serif;background:linear-gradient(120deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.bars{display:flex;height:12px;border-radius:99px;overflow:hidden;margin:12px 0 8px;background:var(--line)}
+.bars i{display:block;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--mut)}
+.leg s{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;text-decoration:none}
+.ex{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line);animation:rise .4s both}
+.ex:last-child{border:0}
+.ex .ic{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:20px;background:var(--bg)}
+.ex .t{flex:1;min-width:0}
+.ex .t b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ex .t small{color:var(--mut)}
+.ex .amt{font-weight:700}
+.acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.m{position:relative;aspect-ratio:1;border-radius:18px;overflow:hidden;cursor:pointer;background:var(--line);animation:rise .5s both;transition:transform .3s}
+.m:hover{transform:scale(1.04)}
+.m img,.m video{width:100%;height:100%;object-fit:cover;display:block}
+.m .pl{position:absolute;inset:0;display:grid;place-items:center;font-size:34px;color:#fff;text-shadow:0 2px 10px #000}
+.drop{border:2px dashed var(--line);border-radius:20px;padding:26px;text-align:center;color:var(--mut);cursor:pointer;margin-bottom:16px;transition:.25s}
+.drop:hover,.drop.ov{border-color:var(--acc);color:var(--acc);background:rgba(20,184,166,.07)}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(10,10,25,.6);backdrop-filter:blur(6px);display:none;place-items:center;padding:16px}
+.modal.open{display:grid;animation:fade .25s}
+@keyframes fade{from{opacity:0}}
+.box{background:var(--surf);border-radius:26px;padding:24px;width:min(520px,100%);max-height:92vh;overflow:auto;animation:pop .35s cubic-bezier(.2,1.2,.3,1)}
+@keyframes pop{from{transform:scale(.85);opacity:0}}
+.box h3{font-size:24px;margin-bottom:14px}
+.f{margin-bottom:12px}
+.cover{height:150px;border-radius:16px;border:2px dashed var(--line);background:var(--bg) center/cover;display:grid;place-items:center;color:var(--mut);cursor:pointer;text-align:center}
+.cover:hover{border-color:var(--acc)}
+.lb{background:rgba(5,5,15,.92)}
+.lb .in{max-width:95vw;max-height:80vh;display:flex;flex-direction:column;align-items:center;gap:14px;animation:pop .3s}
+.lb img,.lb video{max-width:95vw;max-height:74vh;border-radius:14px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);background:var(--text);color:var(--bg);padding:11px 20px;border-radius:99px;opacity:0;transition:.3s;z-index:99;font-weight:600;font-size:13px}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.hide{display:none!important}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+body{background-image:radial-gradient(rgba(37,99,235,.10) 1.2px,transparent 1.2px);background-size:24px 24px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--surf) 72%,transparent);backdrop-filter:blur(16px);padding:10px 16px;border-radius:22px;border:1px solid var(--line);box-shadow:var(--sh)}
+.logo{background:linear-gradient(110deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}.logo span{-webkit-text-fill-color:initial}
+.hero{position:relative}
+.hero h1{background-image:linear-gradient(110deg,var(--acc),var(--acc2),#8b5cf6,var(--acc));background-size:250% 100%;animation:rise .8s both,shim 6s linear infinite}
+@keyframes shim{to{background-position:250% 0}}
+.fl i{position:absolute;font-style:normal;font-size:38px;animation:bob 6s ease-in-out infinite;filter:drop-shadow(0 8px 10px rgba(30,60,110,.25));pointer-events:none}
+.fl i:nth-child(1){left:4%;top:12%}.fl i:nth-child(2){right:6%;top:6%;animation-delay:-2s}.fl i:nth-child(3){left:10%;bottom:8%;animation-delay:-4s}.fl i:nth-child(4){right:12%;bottom:12%;animation-delay:-1s}
+@keyframes bob{50%{transform:translateY(-16px) rotate(8deg)}}
+@media(max-width:640px){.fl i{font-size:24px}}
+.card::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);transform:skewX(-20deg);transition:left .9s;z-index:2;pointer-events:none}
+.card:hover::after{left:130%}
+.card .meta b{font-size:13.5px;padding:6px 14px}
+.card{will-change:transform}
+.mgrid{grid-auto-flow:dense}
+.mgrid .m:first-child{grid-column:span 2;grid-row:span 2}
+.m{box-shadow:var(--sh)}
+.m img,.m video{transition:transform .6s}.m:hover img,.m:hover video{transform:scale(1.1)}
+.m::after{content:"⤢";position:absolute;right:10px;bottom:6px;color:#fff;font-size:20px;opacity:0;transition:.3s;text-shadow:0 2px 8px #000}.m:hover::after{opacity:1}
+.panel{position:relative;overflow:hidden}.panel::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.dh{box-shadow:0 24px 60px rgba(37,99,235,.25)}
+.tabs{box-shadow:var(--sh)}.tab:hover{color:var(--text)}.tab.on{box-shadow:0 6px 16px rgba(37,99,235,.35)}
+#pn{animation:rise .45s both}
+.nv{position:fixed;top:50%;transform:translateY(-50%);width:54px;height:54px;border-radius:50%;border:0;background:rgba(255,255,255,.22);color:#fff;font-size:32px;line-height:1;cursor:pointer;backdrop-filter:blur(8px);transition:.2s;z-index:60}
+.nv:hover{background:rgba(255,255,255,.4);transform:translateY(-50%) scale(1.1)}.nv.p{left:16px}.nv.n{right:16px}
+.xb{position:absolute;top:8px;right:8px;z-index:3;width:34px;height:34px;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;opacity:0;transition:.25s;backdrop-filter:blur(6px)}
+.m:hover .xb{opacity:1}.xb:hover{background:#e5484d}
+@media(hover:none){.xb{opacity:1}}
+.lb.fs{padding:0}
+.lb.fs .in{max-width:100vw;max-height:100vh;width:100%;height:100%;justify-content:center}
+.lb.fs img,.lb.fs video{max-width:100vw;max-height:100vh;width:100%;height:100%;object-fit:contain;border-radius:0}
+.lb.fs .in>div:nth-of-type(1){position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);padding:4px 14px;border-radius:99px;z-index:61}
+.lb.fs .acts{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:61;opacity:.4;transition:.3s}
+.lb.fs .acts:hover{opacity:1}
+@media(hover:none){.lb.fs .acts{opacity:.85}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.pp{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;padding:5px 6px 5px 12px;border-radius:99px;font-size:13px;font-weight:600;display:inline-flex;gap:6px;align-items:center}
+.pp button{border:0;background:rgba(255,255,255,.3);color:#fff;border-radius:50%;width:20px;height:20px;cursor:pointer;line-height:1}
+.dh .pp{background:rgba(255,255,255,.22);backdrop-filter:blur(6px)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div>
+<div class="wrap" id="app"></div>
+
+<div class="modal" id="tm"><div class="box">
+  <h3>✈️ New trip</h3>
+  <div class="f"><label>Cover image</label><div class="cover" id="cv">🖼️ Tap to choose a cover photo</div><input type="file" id="cf" accept="image/*" class="hide"></div>
+  <div class="f"><label>Trip name</label><input id="tn" placeholder="e.g. Trip A – Goa getaway"></div>
+  <div class="row f"><div><label>Destination</label><input id="td" placeholder="Where to?"></div><div><label>Currency</label><select id="tc"><option>₹</option><option>$</option><option>€</option><option>£</option><option>¥</option></select></div></div>
+  <div class="f"><label>People on this trip</label><div class="chips" id="pc"></div><div style="display:flex;gap:8px"><input id="pi" placeholder="Add a name, press Enter" maxlength="40"><button class="btn g sm" id="pa" type="button">Add</button></div></div>
+  <div class="row f"><div><label>Start</label><input type="date" id="ts"></div><div><label>End</label><input type="date" id="te"></div></div>
+  <div class="f"><label>Notes</label><textarea id="tt" rows="2" placeholder="Who came along, highlights…"></textarea></div>
+  <div class="acts"><button class="btn g" data-close>Cancel</button><button class="btn" id="tsave">Save trip</button></div>
+</div></div>
+
+<div class="modal" id="cm" style="z-index:70"><div class="box" style="width:min(400px,100%);text-align:center"><div style="font-size:42px">🗑️</div><h3 id="cmt" style="margin:8px 0 18px;font-size:19px"></h3><div class="acts" style="justify-content:center"><button class="btn g" id="cmn">Cancel</button><button class="btn d" id="cmy">Yes, delete</button></div></div></div>
+<div class="modal lb" id="lb"><div class="in" id="lbin"></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="mf" accept="image/*,video/*" multiple class="hide">
+<input type="file" id="rf" accept="image/*,application/pdf" class="hide">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+<script>
+const SB_URL='https://nkrprhbcnwjmhiwfjhjn.supabase.co',SB_KEY='sb_publishable_oRt-vXemxapl6oH6WwyaWw_G5kbnk3N',BUCKET='trip-files';
+const sb=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CATS={Travel:['🚆','#ff6b4a'],Stay:['🏨','#7a5cff'],Food:['🍜','#f5a524'],Fun:['🎡','#17c964'],Shopping:['🛍️','#0ea5e9'],Other:['📦','#94a3b8']};
+const PAL=['#ec4899','#8b5cf6','#06b6d4','#84cc16','#f97316','#64748b'];
+const catInfo=c=>CATS[c]||['📦',PAL[[...c].reduce((a,ch)=>a+ch.charCodeAt(0),0)%PAL.length]];
+const fmtD=d=>d?new Date(d+'T00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'';
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2800)};
+let D={trips:[],expenses:[],media:[]},SU={},UID=null,cur=null,tab='mem',coverBlob=null,rcpTarget=null,pend=null,people=[],lbList=[],lbI=0;
+const su=p=>p?SU[p]||'':'';
+
+/* ---------- Supabase data layer ---------- */
+async function refresh(){
+  const [t,e,m]=await Promise.all([
+    sb.from('trips').select('*').order('created_at',{ascending:false}),
+    sb.from('expenses').select('*'),
+    sb.from('media').select('*').order('created_at',{ascending:false})]);
+  const err=t.error||e.error||m.error;
+  if(err){console.error(err);toast('Could not load data: '+err.message)}
+  D.trips=t.data||[];D.expenses=(e.data||[]).map(x=>({...x,amount:Number(x.amount)}));D.media=m.data||[];
+  const need=[...D.trips.map(x=>x.cover_path),...D.expenses.map(x=>x.receipt_path),...D.media.map(x=>x.path)].filter(p=>p&&!SU[p]);
+  for(let i=0;i<need.length;i+=100){
+    const {data}=await sb.storage.from(BUCKET).createSignedUrls(need.slice(i,i+100),21600);
+    (data||[]).forEach(r=>{if(r.signedUrl)SU[r.path]=r.signedUrl});
+  }
+  render();
+}
+async function up(file,folder){
+  const ext=((file.name||'').match(/\.([a-z0-9]+)$/i)||[,'bin'])[1].toLowerCase();
+  const path=`files/${folder}/${crypto.randomUUID()}.${ext}`;
+  const {error}=await sb.storage.from(BUCKET).upload(path,file,{contentType:file.type||undefined});
+  if(error){toast('Upload failed: '+error.message);return null}
+  return path;
+}
+const rmFiles=async ps=>{ps=ps.filter(Boolean);if(ps.length)await sb.storage.from(BUCKET).remove(ps)};
+async function dl(u,name){try{const b=await (await fetch(u)).blob();const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Saved ✓')}catch(e){toast('Download failed')}}
+
+/* ---------- views ---------- */
+function render(){cur?trip():home()}
+function home(){
+  $('#app').innerHTML=`<div class="top"><div class="logo"><span>🧭</span>SinhaTrips</div><div class="acts"><button class="btn" data-new>＋ New trip</button></div></div>
+  <div class="hero"><div class="fl"><i>✈️</i><i>🏔️</i><i>🌴</i><i>📸</i></div><h1>Every journey,<br>beautifully kept.</h1><p>Your trips, expenses, receipts and memories — synced on every device.</p>
+  <div class="stats"><div class="chip">🌍 ${D.trips.length} trip${D.trips.length==1?'':'s'}</div><div class="chip">📸 ${D.media.length} memories</div><div class="chip">🧾 ${D.expenses.length} expenses</div></div></div>
+  <div class="grid">${D.trips.map((t,i)=>{const n=D.media.filter(m=>m.trip_id===t.id).length,tot=D.expenses.filter(e=>e.trip_id===t.id).reduce((a,e)=>a+e.amount,0),pc=(t.people||[]).length;
+  return `<div class="card" data-open="${t.id}" style="animation-delay:${i*70}ms">${t.cover_path?`<div class="img" style="background-image:url('${su(t.cover_path)}')"></div>`:'<div class="ph">🏝️</div>'}
+  <div class="ov"><h3>${esc(t.name)}</h3><div style="opacity:.85;font-size:13px">📍 ${esc(t.dest||'—')}${t.start_date?' · '+fmtD(t.start_date):''}</div>
+  <div class="meta"><b>💸 ${esc(t.currency)}${tot.toLocaleString()}</b><b>📸 ${n}</b>${pc?`<b>👥 ${pc}</b>`:''}</div></div></div>`}).join('')}
+  <div class="card add" data-new style="animation-delay:${D.trips.length*70}ms"><div><div class="plus">＋</div><b>Add a new trip</b></div></div></div>`;
+}
+function trip(){
+  const t=D.trips.find(x=>x.id===cur);if(!t){cur=null;return home()}
+  const pp=(t.people||[]);
+  $('#app').innerHTML=`<div class="top"><button class="btn g sm" data-back>← All trips</button><button class="btn d sm" data-deltrip>Delete trip</button></div>
+  <div class="detail"><div class="dh">${t.cover_path?`<div class="img" style="background-image:url('${su(t.cover_path)}')"></div>`:'<div class="img" style="background:linear-gradient(135deg,var(--acc),var(--acc2))"></div>'}
+  <div class="ov"><h2>${esc(t.name)}</h2><div>📍 ${esc(t.dest||'—')} ${t.start_date?' · '+fmtD(t.start_date):''}${t.end_date?' → '+fmtD(t.end_date):''}</div>
+  ${pp.length?`<div class="chips" style="margin:10px 0 0">${pp.map(p=>`<span class="pp" style="padding:4px 12px">👤 ${esc(p)}</span>`).join('')}</div>`:''}
+  ${t.notes?`<div style="opacity:.8;margin-top:6px;font-size:13px">${esc(t.notes)}</div>`:''}</div></div>
+  <div class="tabs"><button class="tab ${tab=='mem'?'on':''}" data-tab="mem">📸 Memories</button><button class="tab ${tab=='exp'?'on':''}" data-tab="exp">💸 Expenses</button></div>
+  <div id="pn"></div></div>`;
+  tab=='exp'?expenses(t):memories(t);
+}
+function expenses(t){
+  const L=D.expenses.filter(e=>e.trip_id===t.id).sort((a,b)=>(b.expense_date||'').localeCompare(a.expense_date||'')||b.created_at.localeCompare(a.created_at)),tot=L.reduce((a,e)=>a+e.amount,0);
+  const by={};L.forEach(e=>by[e.category]=(by[e.category]||0)+e.amount);
+  $('#pn').innerHTML=`<div class="panel"><label>Total spent</label><div class="total">${esc(t.currency)}${tot.toLocaleString(undefined,{maximumFractionDigits:2})}</div>
+  <div class="bars">${Object.keys(by).map(c=>`<i style="width:${by[c]/tot*100}%;background:${catInfo(c)[1]}"></i>`).join('')}</div>
+  <div class="leg">${Object.keys(by).map(c=>`<span><s style="background:${catInfo(c)[1]}"></s>${esc(c)} ${esc(t.currency)}${by[c].toLocaleString()}</span>`).join('')||'No expenses yet'}</div></div>
+  <div class="panel"><div class="row"><div><label>What for</label><input id="et" placeholder="Dinner, taxi…"></div><div><label>Amount (${esc(t.currency)})</label><input id="ea" type="number" min="0" step="0.01" inputmode="decimal"></div>
+  <div><label>Category</label><select id="ec">${Object.keys(CATS).map(c=>`<option>${c}</option>`).join('')}</select><input id="eo" class="hide" placeholder="Type your category" maxlength="30" style="margin-top:6px"></div><div><label>Date</label><input id="ed" type="date" value="${new Date().toISOString().slice(0,10)}"></div></div>
+  <div class="acts" style="justify-content:space-between;margin-top:12px;align-items:center"><span><button class="btn g sm" id="erb">📎 Attach receipt</button> <small id="ern" style="color:var(--mut)"></small></span><button class="btn sm" id="eadd">Add expense</button></div></div>
+  <div class="panel">${L.map((e,i)=>`<div class="ex" style="animation-delay:${i*40}ms"><div class="ic">${catInfo(e.category)[0]}</div><div class="t"><b>${esc(e.title)}</b><small>${esc(e.category)} · ${fmtD(e.expense_date)}${e.receipt_path?' · 🧾 receipt':''}</small></div><div class="amt">${esc(t.currency)}${e.amount.toLocaleString()}</div>
+  <div class="acts">${e.receipt_path?`<button class="btn g sm" data-vr="${e.id}">View</button><button class="btn g sm" data-dr="${e.id}">⬇</button>`:`<button class="btn g sm" data-ar="${e.id}">＋🧾</button>`}<button class="btn g sm" data-de="${e.id}">✕</button></div></div>`).join('')||'<div class="empty">No expenses yet — add your first one above ✨</div>'}</div>`;
+}
+function memories(t){
+  const L=D.media.filter(m=>m.trip_id===t.id);
+  $('#pn').innerHTML=`<div class="drop" id="dz">📤 <b>Drop photos &amp; videos here</b> or tap to upload</div>
+  <div class="mgrid">${L.map((m,i)=>`<div class="m" data-view="${m.id}" style="animation-delay:${Math.min(i,20)*40}ms"><button class="xb" data-dm="${m.id}" title="Delete">🗑</button>${(m.type||'').startsWith('video')?`<video src="${su(m.path)}#t=0.1" preload="metadata" muted></video><div class="pl">▶</div>`:`<img src="${su(m.path)}" alt="" loading="lazy">`}</div>`).join('')}</div>
+  ${L.length?'':'<div class="empty">No memories yet — add the moments worth keeping 📸</div>'}`;
+}
+
+/* ---------- helpers: modal, people, lightbox ---------- */
+function chips(){$('#pc').innerHTML=people.map((p,i)=>`<span class="pp">${esc(p)}<button data-rp="${i}" type="button">×</button></span>`).join('')}
+function addPerson(){const v=$('#pi').value.trim();if(v&&!people.includes(v)){people.push(v);chips()}$('#pi').value='';$('#pi').focus()}
+function openTripModal(){coverBlob=null;people=[];chips();['tn','td','tt','ts','te','pi'].forEach(i=>$('#'+i).value='');$('#cv').style.backgroundImage='';$('#cv').textContent='🖼️ Tap to choose a cover photo';$('#tm').classList.add('open')}
+function ask(msg){return new Promise(r=>{const c=$('#cm');$('#cmt').textContent=msg;c.classList.add('open');const done=v=>{c.classList.remove('open');c.onclick=null;r(v)};$('#cmy').onclick=()=>done(true);$('#cmn').onclick=()=>done(false);c.onclick=e=>{e.stopPropagation();if(e.target===c)done(false)}})}
+function lbFs(on){const l=$('#lb');l.classList.toggle('fs',on);const b=$('#lbf');if(b)b.textContent=on?'⤡ Exit full screen':'⛶ Full screen';try{if(on&&l.requestFullscreen)l.requestFullscreen().catch(()=>{});else if(!on&&document.fullscreenElement)document.exitFullscreen()}catch(e){}}
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&$('#lb').classList.contains('fs')){$('#lb').classList.remove('fs');const b=$('#lbf');if(b)b.textContent='⛶ Full screen'}});
+function lbShow(i){
+  lbI=(i+lbList.length)%lbList.length;const m=lbList[lbI],many=lbList.length>1,isV=(m.type||'').startsWith('video'),n=m.name||('memory.'+(isV?'mp4':'jpg')),u=su(m.path);
+  $('#lbin').innerHTML=(isV?`<video src="${u}" controls autoplay></video>`:`<img src="${u}" alt="">`)+`<div style="color:#fff;font-size:13px;opacity:.8">${lbI+1} / ${lbList.length}</div><div class="acts"><button class="btn" id="lbd">⬇ Download</button><button class="btn g" id="lbf">⛶ Full screen</button><button class="btn g" data-close>Close</button><button class="btn d" id="lbx">🗑 Delete</button></div>`+(many?`<button class="nv p" data-nav="-1">‹</button><button class="nv n" data-nav="1">›</button>`:'');
+  $('#lb').classList.add('open');
+  $('#lbd').onclick=()=>dl(u,n);
+  $('#lbf').onclick=()=>lbFs(!$('#lb').classList.contains('fs'));
+  if($('#lb').classList.contains('fs'))$('#lbf').textContent='⤡ Exit full screen';
+  $('#lbx').onclick=async()=>{lbFs(false);if(!await ask('Delete this '+(isV?'video':'photo')+'? This cannot be undone.'))return;await rmFiles([m.path]);await sb.from('media').delete().eq('id',m.id);D.media=D.media.filter(x=>x.id!==m.id);lbList.splice(lbI,1);render();if(lbList.length)lbShow(Math.min(lbI,lbList.length-1));else{$('#lb').classList.remove('open');$('#lbin').innerHTML=''}toast('Deleted')};
+}
+async function addFiles(files){
+  const ok=[...files].filter(f=>/^(image|video)\//.test(f.type));if(!ok.length)return toast('Choose images or videos');
+  let n=0;for(const f of ok){toast(`Uploading ${n+1} of ${ok.length}…`);const p=await up(f,'media');if(!p)continue;
+    const {error}=await sb.from('media').insert({trip_id:cur,path:p,type:f.type,name:f.name});if(error)toast(error.message);else n++}
+  await refresh();toast(n+' added ✨');
+}
+const rname=x=>x.receipt_name||'receipt';
+
+/* ---------- events ---------- */
+document.addEventListener('click',async e=>{
+  const g=a=>e.target.closest('['+a+']');let el;
+  if(el=g('data-nav'))return lbShow(lbI+ +el.dataset.nav);
+  if(g('data-close')||e.target.classList.contains('modal')){document.querySelectorAll('.modal:not(#am)').forEach(m=>m.classList.remove('open'));$('#lbin').innerHTML='';lbFs(false);return}
+  if(g('data-new'))return openTripModal();
+  if(el=g('data-rp')){people.splice(+el.dataset.rp,1);return chips()}
+  if(e.target.id==='pa')return addPerson();
+  if(el=g('data-open')){cur=el.dataset.open;tab='mem';scrollTo(0,0);return render()}
+  if(g('data-back')){cur=null;return render()}
+  if(g('data-deltrip')){if(!await ask('Delete this trip with all its expenses and memories? This cannot be undone.'))return;
+    const ps=[D.trips.find(t=>t.id===cur)?.cover_path,...D.expenses.filter(x=>x.trip_id===cur).map(x=>x.receipt_path),...D.media.filter(x=>x.trip_id===cur).map(x=>x.path)];
+    await rmFiles(ps);const {error}=await sb.from('trips').delete().eq('id',cur);if(error)return toast(error.message);cur=null;await refresh();return toast('Trip deleted')}
+  if(el=g('data-tab')){tab=el.dataset.tab;return render()}
+  if(e.target.id==='cv')return $('#cf').click();
+  if(e.target.id==='dz'||e.target.closest('#dz'))return $('#mf').click();
+  if(e.target.id==='erb'){rcpTarget='new';return $('#rf').click()}
+  if(el=g('data-ar')){rcpTarget=el.dataset.ar;return $('#rf').click()}
+  if(el=g('data-dm')){const id=el.dataset.dm,m=D.media.find(x=>x.id===id);if(await ask('Delete this memory? This cannot be undone.')){await rmFiles([m.path]);await sb.from('media').delete().eq('id',id);await refresh();toast('Deleted')}return}
+  if(el=g('data-view')){lbList=D.media.filter(m=>m.trip_id===cur);return lbShow(lbList.findIndex(m=>m.id===el.dataset.view))}
+  if(el=g('data-vr')){const x=D.expenses.find(v=>v.id===el.dataset.vr),u=su(x.receipt_path),pdf=x.receipt_type==='application/pdf';
+    $('#lbin').innerHTML=(pdf?`<a class="btn" href="${u}" target="_blank" rel="noopener">📄 Open PDF receipt</a>`:`<img src="${u}" alt="">`)+`<div class="acts"><button class="btn" id="lbd">⬇ Download</button><button class="btn g" data-close>Close</button></div>`;
+    $('#lb').classList.add('open');$('#lbd').onclick=()=>dl(u,rname(x));return}
+  if(el=g('data-dr')){const x=D.expenses.find(v=>v.id===el.dataset.dr);return dl(su(x.receipt_path),rname(x))}
+  if(el=g('data-de')){const x=D.expenses.find(v=>v.id===el.dataset.de);if(await ask('Delete this expense?')){await rmFiles([x.receipt_path]);await sb.from('expenses').delete().eq('id',x.id);await refresh()}return}
+  if(e.target.id==='eadd'){
+    const title=$('#et').value.trim(),amount=parseFloat($('#ea').value);if(!title||!(amount>=0))return toast('Add a name and amount');
+    let cat=$('#ec').value;if(cat==='Other'){const o=$('#eo').value.trim();if(o)cat=o}
+    let rp=null;if(pend){toast('Uploading receipt…');rp=await up(pend,'receipts');if(!rp)return}
+    const {error}=await sb.from('expenses').insert({trip_id:cur,title,amount,category:cat,expense_date:$('#ed').value||null,receipt_path:rp,receipt_name:pend?pend.name:null,receipt_type:pend?pend.type:null});
+    if(error)return toast(error.message);pend=null;await refresh();return toast('Expense added 💸')}
+  if(e.target.id==='tsave'){
+    const name=$('#tn').value.trim();if(!name)return toast('Give your trip a name');
+    if($('#pi').value.trim())addPerson();
+    let cp=null;if(coverBlob){toast('Uploading cover…');cp=await up(coverBlob,'covers')}
+    const {error}=await sb.from('trips').insert({name,dest:$('#td').value.trim(),currency:$('#tc').value,start_date:$('#ts').value||null,end_date:$('#te').value||null,notes:$('#tt').value.trim(),people:[...people],cover_path:cp});
+    if(error)return toast(error.message);$('#tm').classList.remove('open');await refresh();toast('Trip created 🎉')}
+});
+document.addEventListener('change',e=>{if(e.target.id==='ec')$('#eo').classList.toggle('hide',e.target.value!=='Other')});
+$('#cf').onchange=e=>{const f=e.target.files[0];if(!f)return;coverBlob=f;$('#cv').textContent='';$('#cv').style.backgroundImage=`url('${URL.createObjectURL(f)}')`;e.target.value=''};
+$('#mf').onchange=e=>{addFiles(e.target.files);e.target.value=''};
+$('#rf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  if(rcpTarget==='new'){pend=f;const n=$('#ern');if(n)n.textContent='📎 '+f.name}
+  else{toast('Uploading receipt…');const p=await up(f,'receipts');if(!p)return;const {error}=await sb.from('expenses').update({receipt_path:p,receipt_name:f.name,receipt_type:f.type}).eq('id',rcpTarget);if(error)return toast(error.message);await refresh();toast('Receipt attached 🧾')}};
+document.addEventListener('dragover',e=>{const z=e.target.closest('#dz');if(z){e.preventDefault();z.classList.add('ov')}});
+document.addEventListener('dragleave',e=>{const z=e.target.closest('#dz');if(z)z.classList.remove('ov')});
+document.addEventListener('drop',e=>{const z=e.target.closest('#dz');if(z){e.preventDefault();z.classList.remove('ov');addFiles(e.dataTransfer.files)}});
+document.addEventListener('keydown',e=>{
+  if(e.target.id==='pi'&&e.key==='Enter'){e.preventDefault();return addPerson()}
+  if(e.key==='Escape'){if($('#cm').classList.contains('open')){$('#cmn').click();return}if($('#lb').classList.contains('fs')){lbFs(false);return}document.querySelectorAll('.modal:not(#am)').forEach(m=>m.classList.remove('open'))}
+  if($('#lb').classList.contains('open')&&lbList.length>1&&$('#lbin .nv')){if(e.key==='ArrowRight')lbShow(lbI+1);if(e.key==='ArrowLeft')lbShow(lbI-1)}});
+let tx=null;$('#lb').addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
+$('#lb').addEventListener('touchend',e=>{if(tx===null||!$('#lbin .nv'))return;const d=e.changedTouches[0].clientX-tx;tx=null;if(Math.abs(d)>50)lbShow(lbI+(d<0?1:-1))});
+document.addEventListener('mousemove',e=>{const c=e.target.closest&&e.target.closest('.card:not(.add)');if(!c)return;const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;c.style.transform=`perspective(1000px) rotateX(${-y*4}deg) rotateY(${x*5}deg) translateY(-6px)`});
+document.addEventListener('mouseout',e=>{const c=e.target.closest&&e.target.closest('.card');if(c&&!c.contains(e.relatedTarget))c.style.transform=''});
+
+$('#app').innerHTML='<div class="empty">Loading your trips…</div>';refresh();
+</script>
+</body>
+</html>
